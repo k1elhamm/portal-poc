@@ -75,19 +75,19 @@
     .view.off { visibility: hidden; opacity: 0; transform: scale(.97); pointer-events: none; transition: opacity .3s, transform .3s, visibility 0s .3s; }
 
     /* ---------- Mosaïque ---------- */
-    .mosaic { position: absolute; inset: 0; overflow: hidden; }
-    .layer { position: absolute; inset: 0; transform-origin: 0 0; }
+    .mosaic { position: absolute; inset: 0; overflow-x: scroll; overflow-y: hidden; overscroll-behavior-x: contain; }
+    .layer { position: relative; min-height: 100%; transform-origin: 0 0; }
     .layer.anim { transition: transform .5s var(--ease), opacity .5s var(--ease); }
     .layer.zooming .tile-head, .layer.zooming .inner-blk, .layer.zooming .mini { opacity: 0; transition: opacity .12s; }
     .layer.enter { opacity: 0; transform: scale(.985); }
-    .tile { position: absolute; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--rule); border-radius: 14px; background: var(--panel); cursor: zoom-in; transition: box-shadow .2s, border-color .2s, opacity .3s, filter .3s; }
+    .tile { position: absolute; display: flex; flex-direction: column; overflow: hidden; border: 1px solid color-mix(in srgb, var(--c) 35%, #fff); border-top: 4px solid var(--c); border-radius: 10px; background: color-mix(in srgb, var(--c) 6%, #fff); cursor: zoom-in; transition: box-shadow .2s, border-color .2s, opacity .3s, filter .3s; }
     .tile.pole { border-color: color-mix(in srgb, var(--c) 35%, #fff); background: color-mix(in srgb, var(--c) 9%, #fff); }
     .tile:hover { border-color: color-mix(in srgb, var(--c, #868e96) 60%, #fff); box-shadow: 0 10px 28px rgb(27 30 37 / 10%); z-index: 2; }
     .tile.dim, .inner-blk.dim { opacity: .25; filter: saturate(.3); }
     .tile.match { box-shadow: 0 0 0 3px #ffd43b; }
-    .tile-head { display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px 5px; border: 0; background: transparent; text-align: left; cursor: zoom-in; transition: opacity .2s .1s; }
+    .tile-head { display: flex; align-items: flex-start; gap: 6px; padding: 8px 10px 6px; border: 0; background: transparent; text-align: left; cursor: zoom-in; transition: opacity .2s .1s; }
     .tile-head:focus-visible, .inner-blk:focus-visible { outline: 3px solid #1c7ed6; outline-offset: -3px; }
-    .tile-name { overflow: hidden; font-size: 14px; font-weight: 780; letter-spacing: -.01em; line-height: 1.2; text-overflow: ellipsis; }
+    .tile-name { overflow-wrap: anywhere; font-size: 17px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; color: color-mix(in srgb, var(--c) 45%, #15212c); }
     .tile-meta { margin-top: 2px; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
     .tile.pole .tile-meta { color: color-mix(in srgb, var(--c) 55%, #333); }
     .tile.compact .tile-head { padding: 6px 8px 3px; }
@@ -98,8 +98,8 @@
     .tile-badges { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin-left: auto; }
     .badge { padding: 2px 7px; border-radius: 999px; background: #ffd43b; color: #5c4400; font-size: 11px; font-weight: 750; white-space: nowrap; }
     .step { display: inline-grid; flex: none; width: 20px; height: 20px; place-items: center; border-radius: 50%; background: var(--line-color); color: #fff; font-size: 11px; font-weight: 800; box-shadow: 0 0 0 2px #fff; }
-    .tile-body { position: relative; flex: 1; margin: 0 7px 7px; }
-    .inner-blk { position: absolute; overflow: hidden; padding: 4px 6px; border: 0; border-radius: 7px; background: color-mix(in srgb, var(--c) 22%, #fff); color: color-mix(in srgb, var(--c) 60%, #222); cursor: zoom-in; font-size: 10.5px; font-weight: 650; line-height: 1.2; text-align: left; transition: filter .15s, opacity .3s, box-shadow .2s; }
+    .tile-body { position: relative; flex: 1; min-height: 0; margin: 0 6px 6px; }
+    .inner-blk { position: absolute; overflow: hidden; padding: 4px 6px; border: 1px solid color-mix(in srgb, var(--c) 25%, #fff); border-radius: 5px; background: color-mix(in srgb, var(--c) var(--shade, 18%), #fff); color: color-mix(in srgb, var(--c) 35%, #17212b); cursor: zoom-in; font-size: 11px; font-weight: 700; line-height: 1.2; text-align: left; transition: filter .15s, opacity .3s, box-shadow .2s; }
     .inner-blk:hover { filter: brightness(.96) saturate(1.3); }
     .inner-blk.match { box-shadow: inset 0 0 0 2px #f59f00; }
     .inner-blk .step { position: absolute; top: 3px; right: 3px; width: 16px; height: 16px; font-size: 9px; }
@@ -120,8 +120,16 @@
     .frame-label { position: absolute; top: 0; right: 0; left: 0; height: 18px; overflow: hidden; padding: 3px 7px; border: 0; background: none; color: var(--muted); cursor: zoom-in; font-size: 9.5px; font-weight: 800; letter-spacing: .07em; text-align: left; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
     .frame-label:hover { color: var(--ink); }
     .frame-inner { position: absolute; top: 18px; right: 3px; bottom: 3px; left: 3px; }
-    .inner-blk .nm { position: relative; z-index: 1; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .inner-blk .nm { position: relative; z-index: 1; display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
     .inner-blk .cnt { position: relative; z-index: 1; display: block; margin-top: 1px; font-size: 9.5px; font-weight: 600; opacity: .75; }
+    .overview .tile-meta { font-size: 11px; }
+    .overview .tile-meta + .tile-meta { display: none; }
+    .overview .inner-blk .cnt { display: none; }
+    .mosaic-edge { position: absolute; top: 50%; z-index: 8; display: grid; justify-items: center; width: 50px; padding: 8px 4px; border: 1px solid var(--rule); border-radius: 14px; background: #fff; box-shadow: 0 4px 24px rgb(27 30 37 / 24%); cursor: pointer; transform: translateY(-50%); }
+    .mosaic-edge span { font-size: 34px; line-height: 1; }
+    .mosaic-edge small { font-size: 10px; font-weight: 750; }
+    .mosaic-edge.prev { left: 6px; }
+    .mosaic-edge.next { right: 6px; }
     .sec-nav { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 2px; }
     .sec-nav button { padding: 4px 9px; border: 1px solid var(--rule); border-radius: 999px; background: #fff; cursor: pointer; font-size: 11.5px; font-weight: 700; }
     .sec-nav button:hover { border-color: var(--ink-2); }
@@ -169,6 +177,16 @@
     .rayon-head .dom-dot { align-self: center; }
     .rayon .plank-row:first-of-type { margin-top: 12px; }
     .shelf-empty { display: grid; height: 70%; place-items: center; color: var(--muted); text-align: center; }
+    .book-stacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); align-items: end; gap: 28px 22px; }
+    .plank-row { flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; margin-top: 18px; padding: 0 8px; }
+    .book { border-radius: 3px 6px 6px 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c) 18%, var(--c) 80%, color-mix(in srgb, var(--c) 65%, #000)); box-shadow: inset 0 -3px 0 rgb(0 0 0 / 16%), 1px 2px 3px rgb(0 0 0 / 12%); }
+    .book:hover, .book:focus-visible { transform: translateX(6px); }
+    .book .t { top: 8px; right: 48px; bottom: 8px; left: 20px; display: flex; align-items: center; color: #fff; font-size: 13px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; text-align: left; transform: none; writing-mode: horizontal-tb; text-shadow: 0 1px 3px #000; }
+    .book .v { top: 50%; right: 8px; bottom: auto; left: auto; font-size: 10px; transform: translateY(-50%); }
+    .book .bands { top: 7px; bottom: 7px; right: auto; left: 7px; flex-direction: column; width: 4px; height: auto; }
+    .book .rule { top: 0; bottom: 0; right: auto; left: 15px; width: 1px; height: auto; }
+    .book .lux { right: 10px; bottom: 3px; left: auto; font-size: 9px; }
+    .book.deprecated { --tilt: 0deg; opacity: 1; filter: none; }
 
     .tip { position: fixed; z-index: 70; display: none; max-width: 300px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 12px; background: #fff; box-shadow: 0 12px 30px rgb(0 0 0 / 18%); pointer-events: none; font-size: 12px; line-height: 1.45; }
     .tip.show { display: block; }
@@ -198,6 +216,53 @@
     .tome-nav { position: absolute; top: 50%; display: grid; width: 44px; height: 44px; place-items: center; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 8px 20px rgb(0 0 0 / 25%); cursor: pointer; font-size: 22px; transform: translateY(-50%); }
     .tome-nav.prev { left: -66px; } .tome-nav.next { right: -66px; }
     .tome-nav:disabled { opacity: .35; cursor: default; }
+    .tome { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); grid-template-rows: auto minmax(0, 1fr) auto; width: min(1160px, 94vw); height: min(800px, 92vh); }
+    .book-tools, .book-pager { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 12px 18px; background: #fffdf7; }
+    .book-tools { border-bottom: 1px solid var(--rule); border-radius: 12px 12px 0 0; }
+    .book-pager { justify-content: space-between; border-top: 1px solid var(--rule); border-radius: 0 0 12px 12px; }
+    .book-pager button:disabled { opacity: .4; cursor: default; }
+    .book-tools .tome-close, .book-tools .tome-full { position: static; box-shadow: none; font-size: 12px; }
+    .book-tools .tome-close { margin-left: auto; }
+    .book-outline { display: grid; gap: 6px; margin-top: 20px; }
+    .book-outline button { padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: #fff; text-align: left; cursor: pointer; }
+    .book-outline button[aria-current="page"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .book-overlay.standard .tome { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+    .book-overlay.standard .tome::before { background: #fff; }
+    .book-overlay.standard .page { border-radius: 0; box-shadow: none; }
+    .book-overlay.standard .page.left { max-height: 240px; padding: 16px 24px; border-bottom: 1px solid var(--rule); }
+    .book-overlay.standard .pg-title { font-family: var(--font); font-size: 26px; }
+    .book-overlay.standard .book-outline { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 12px; }
+    .book-overlay.standard .book-outline button { padding: 7px 10px; font-size: 12px; }
+    .book-overlay.full .tome { width: 100vw; height: 100dvh; }
+    .home { overflow: auto; padding: clamp(24px, 5vw, 72px); background: radial-gradient(ellipse at top right, #dbe9e4, transparent 65%), #fbf9f4; }
+    .home-inner { max-width: 1100px; margin: auto; }
+    .home-kicker { color: #35675b; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; }
+    .home h1 { max-width: 850px; margin: 18px 0; font-size: clamp(32px, 4.5vw, 60px); line-height: 1.1; letter-spacing: -.04em; }
+    .home-intro { max-width: 720px; color: var(--ink-2); font-size: 18px; line-height: 1.7; }
+    .home-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 28px 0; }
+    .home-actions button { padding: 14px 22px; font-size: 15px; }
+    .home-stats, .home-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; margin: 28px 0; }
+    .home-stats div, .home-card { padding: 24px; border: 1px solid var(--rule); border-radius: 16px; background: #ffffffbd; }
+    .home-stats b { display: block; font-size: 30px; }
+    .home-card { width: 100%; text-align: left; cursor: pointer; }
+    .home-card strong { display: block; margin-bottom: 10px; font-size: 20px; }
+    .home-card span { color: var(--ink-2); line-height: 1.6; }
+    .app.is-home { grid-template-rows: auto 1fr; }
+    .app.is-home .toolbar { display: none; }
+    @media (max-width: 700px) {
+      .tome, .book-overlay.standard .tome { grid-template-columns: 1fr; grid-template-rows: auto minmax(150px, .7fr) minmax(0, 1.3fr) auto; height: 94dvh; }
+      .page { padding: 20px; }
+      .book-outline { display: flex; flex-wrap: wrap; margin-top: 12px; }
+      .book-outline button { padding: 6px 8px; font-size: 12px; }
+      .pg-title { font-size: 24px; }
+      .topbar { grid-template-columns: 1fr !important; }
+      .search, .crumbs { grid-column: 1 / -1; }
+      .toolbar { flex-wrap: wrap !important; }
+      .toolbar .tool-group { overflow-x: auto; max-width: 100%; }
+      .book-tools { padding: 8px; gap: 4px; }
+      .book-pager { padding: 8px; font-size: 12px; }
+      .book-overlay.full .tome { width: 100vw; height: 100dvh; }
+    }
     .pg-kicker { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
     .pg-kicker button { padding: 0; border: 0; background: none; color: inherit; cursor: pointer; font: inherit; letter-spacing: inherit; text-decoration: underline; text-decoration-color: var(--rule); text-transform: inherit; }
     .pg-title { margin: 8px 0 6px; font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 700; letter-spacing: -.01em; line-height: 1.1; }
@@ -471,8 +536,7 @@
       .facts { flex-wrap: nowrap; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
       .tool-group .seg-label { display: none; }
       .stage { margin: 0 10px 10px; }
-      .tome { grid-template-columns: 1fr; overflow: auto; height: 88vh; }
-      .page.left, .page.right { border-radius: 12px; overflow: visible; }
+      .tome { width: 96vw; }
       .tome-nav.prev { left: 4px; } .tome-nav.next { right: 4px; }
       .kpis { grid-template-columns: repeat(2, 1fr); }
     }
@@ -486,6 +550,7 @@
         <div><div class="brand-name">PORTAL</div><div class="brand-sub">Catalogue d’API · Groupe BPCE · démo</div></div>
       </div>
       <div class="views" role="tablist" aria-label="Choisir la vue">
+        <button type="button" role="tab" data-view="home">Accueil</button>
         <button type="button" role="tab" data-view="mosaic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="10" height="11" rx="2"/><rect x="15" y="3" width="6" height="6" rx="1.5"/><rect x="15" y="11" width="6" height="10" rx="1.5"/><rect x="3" y="16" width="10" height="5" rx="1.5"/></svg>Mosaïque</button>
         <button type="button" role="tab" data-view="city"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21h18M5 21V10l4-3v14M9 21V4l6 3v14M15 21v-9l4 2v7"/></svg>Cité</button>
       </div>
@@ -499,14 +564,33 @@
     </header>
 
     <section class="toolbar" aria-label="Résumé et réglages">
+      <button class="pill" id="nav-back" type="button">← Accueil</button>
       <div class="summary" id="summary"></div>
       <div class="tool-group"><span class="seg-label">Afficher</span><div class="seg" id="types" role="group" aria-label="Type de ressource"></div></div>
       <div class="tool-group" id="metric-group"><span class="seg-label">Surface</span><div class="seg" id="metric" role="group" aria-label="Ce que représente la surface"></div></div>
+      <div class="tool-group" id="mosaic-scroll"><span class="seg-label">Défiler</span><button class="pill" type="button" data-scroll="-1" aria-label="Faire défiler la mosaïque vers la gauche">←</button><button class="pill" type="button" data-scroll="1" aria-label="Faire défiler la mosaïque vers la droite">→</button></div>
     </section>
 
     <main class="stage" id="stage">
+      <section class="view home off" id="home-view" aria-label="Accueil du portail" hidden>
+        <div class="home-inner">
+          <div class="home-kicker">Le portail des API · Groupe BPCE</div>
+          <h1>Découvrez les API.<br>Construisez les services de demain.</h1>
+          <p class="home-intro">Un point d’entrée pour explorer le catalogue, comprendre les capacités proposées et retrouver les équipes qui les font vivre. Choisissez une entité, un pôle, puis une API.</p>
+          <div class="home-actions"><button class="btn" type="button" data-home-view="mosaic">Explorer le catalogue →</button><button class="btn ghost" type="button" data-home-view="city">Découvrir la cité</button></div>
+          <div class="home-stats" id="home-stats"></div>
+          <h2>Deux façons d’explorer un même catalogue</h2>
+          <div class="home-cards">
+            <button class="home-card" type="button" data-home-view="mosaic"><strong>Mosaïque & bibliothèque</strong><span>Retrouvez les entités et leurs pôles, puis ouvrez le livre d’une API pour découvrir sa présentation, ses fonctions et ses endpoints.</span></button>
+            <button class="home-card" type="button" data-home-view="city"><strong>La cité des API</strong><span>Parcourez les villes et les quartiers, inspectez les bâtiments et visualisez les relations entre les API.</span></button>
+          </div>
+          <p class="note">Démonstration : données fictives, tests d’endpoints simulés et aucun accès à un système réel.</p>
+        </div>
+      </section>
       <section class="view" id="mosaic-view" aria-label="Vue mosaïque">
-        <div class="mosaic" id="mosaic"><div class="layer" id="layer"></div><svg class="links" id="links" aria-hidden="true"></svg></div>
+        <div class="mosaic" id="mosaic" tabindex="0" aria-label="Mosaïque du catalogue, défilement horizontal"><div class="layer" id="layer"></div><svg class="links" id="links" aria-hidden="true"></svg></div>
+        <button class="mosaic-edge prev" id="mosaic-prev" type="button" data-scroll="-1" aria-label="Voir les entités précédentes" title="Faire défiler vers la gauche" hidden><span aria-hidden="true">‹</span><small>Retour</small></button>
+        <button class="mosaic-edge next" id="mosaic-next" type="button" data-scroll="1" aria-label="Voir les entités suivantes" title="Faire défiler vers la droite" hidden><span aria-hidden="true">›</span><small>Suite</small></button>
         <div class="shelf-host" id="shelf-m" hidden></div>
       </section>
       <section class="view off night flat" id="city-view" aria-label="Vue cité">
@@ -722,7 +806,12 @@
     const METHOD_COLOR = { GET: "#2f9e44", POST: "#1c7ed6", PATCH: "#f59f00", PUT: "#f59f00", DELETE: "#e03131", TOOL: "#7048e8", RUN: "#7048e8", ASK: "#7048e8" };
     const STATUS = { stable: { label: "En production", cls: "s-stable" }, beta: { label: "En construction", cls: "s-beta" }, deprecated: { label: "Dépréciée", cls: "s-deprecated" }, preview: { label: "Aperçu", cls: "s-preview" } };
     const COMP = { lux: { label: "Hôtel de luxe", color: "#f6c344" }, good: { label: "Conforme", color: "#51cf66" }, fair: { label: "Fatigué", color: "#fd9b3a" }, poor: { label: "Vétuste", color: "#e8590c" } };
-    const colorOf = (it) => DOMAINS[it.domain].color;
+    const entityColor = (id) => `hsl(${(ENTITIES.findIndex((e) => e.id === id) * 137.508 + 195) % 360} 48% 38%)`;
+    const poleColor = (id) => {
+      const a = APPS[id], index = ENT[a.entity].apps.indexOf(id);
+      return `color-mix(in srgb, ${entityColor(a.entity)} ${70 + index % 6 * 5}%, #fff)`;
+    };
+    const colorOf = (it) => poleColor(it.app);
     const itemsOf = (aid, type = state.type) => (type === "api" ? APPS[aid].apis : APPS[aid].items[type]);
     const typeCount = (t) => APP_LIST.reduce((n, a) => n + itemsOf(a.id, t).length, 0);
     const wherePath = (it) => [ENT[it.entity].name, it.sub ? SUBS[it.sub].name : null, APPS[it.app].name].filter(Boolean).join(" › ");
@@ -858,9 +947,9 @@
     function nodeOf(k) {
       if (!k || k === ROOT) return { k: ROOT, kind: "root", name: "Groupe BPCE" };
       const kind = k[0], id = k.slice(2);
-      if (kind === "e") return { k, kind, id, name: ENT[id].name, sub: ENT[id].role };
+      if (kind === "e") return { k, kind, id, name: ENT[id].name, sub: ENT[id].role, color: entityColor(id) };
       if (kind === "s") return { k, kind, id, name: SUBS[id].name, sub: ENT[SUBS[id].entity].name };
-      return { k, kind, id, name: APPS[id].name, sub: DOMAINS[APPS[id].domain].name, color: DOMAINS[APPS[id].domain].color };
+      return { k, kind, id, name: APPS[id].name, sub: DOMAINS[APPS[id].domain].name, color: poleColor(id) };
     }
     function kidsOf(k) {
       const n = nodeOf(k);
@@ -909,28 +998,85 @@
     }
 
     const mosaic = $("#mosaic"), layer = $("#layer"), links = $("#links"), shelfM = $("#shelf-m");
-    const GAP = 6;
     const relRect = (el, ref = mosaic) => { const a = el.getBoundingClientRect(), b = ref.getBoundingClientRect(); return { x: a.left - b.left, y: a.top - b.top, w: a.width, h: a.height }; };
-    const place = (el, r, g = GAP) => Object.assign(el.style, { left: `${r.x + g / 2}px`, top: `${r.y + g / 2}px`, width: `${Math.max(0, r.w - g)}px`, height: `${Math.max(0, r.h - g)}px` });
+    const place = (el, r, gap = 6) => Object.assign(el.style, { left: `${r.x + gap / 2}px`, top: `${r.y + gap / 2}px`, width: `${Math.max(0, r.w - gap)}px`, height: `${Math.max(0, r.h - gap)}px` });
+    function mosaicLayout(items, height) {
+      if (!items.length || height <= 0) return [];
+      const average = items.reduce((sum, item) => sum + item.value, 0) / (items.length || 1);
+      const minHeight = Math.min(186, height), maxHeight = Math.min(286, height);
+      const maxRows = Math.max(1, Math.floor(height / minHeight)), minRows = Math.min(maxRows, Math.ceil(height / maxHeight));
+      const rects = [];
+      let x = 0, offset = 0, column = 0;
+      while (offset < items.length) {
+        const count = column % 2 ? maxRows : minRows;
+        const group = items.slice(offset, offset + count);
+        const weight = group.reduce((sum, item) => sum + item.value, 0);
+        const w = Math.max(246, Math.min(346, 286 * weight / group.length / average));
+        const heights = group.map(() => minHeight);
+        let remaining = Math.min(height, group.length * maxHeight) - group.length * minHeight;
+        // Redistribute only to blocks that have not reached their size cap.
+        for (let pass = 0; pass < group.length && remaining > .001; pass += 1) {
+          const available = group.map((_, i) => i).filter(i => heights[i] < maxHeight - .001);
+          const total = available.reduce((sum, i) => sum + group[i].value, 0);
+          const budget = remaining;
+          available.forEach(i => {
+            const extra = Math.min(maxHeight - heights[i], budget * group[i].value / total);
+            heights[i] += extra; remaining -= extra;
+          });
+        }
+        let y = 0;
+        group.forEach((item, i) => {
+          rects.push({ ...item, x, y, w, h: heights[i] });
+          y += heights[i];
+        });
+        x += w; offset += group.length; column += 1;
+      }
+      return rects;
+    }
+    function updateMosaicArrows() {
+      const overflow = !mosaic.hidden && mosaic.scrollWidth > mosaic.clientWidth + 1;
+      const start = mosaic.scrollLeft <= 1;
+      const end = mosaic.scrollLeft + mosaic.clientWidth >= mosaic.scrollWidth - 1;
+      $("#mosaic-prev").hidden = !overflow || start;
+      $("#mosaic-next").hidden = !overflow || end;
+      $("#mosaic-scroll").querySelector('[data-scroll="-1"]').disabled = !overflow || start;
+      $("#mosaic-scroll").querySelector('[data-scroll="1"]').disabled = !overflow || end;
+    }
+    mosaic.addEventListener("scroll", updateMosaicArrows, { passive: true });
+    mosaic.addEventListener("wheel", event => {
+      if (event.ctrlKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY) || mosaic.scrollWidth <= mosaic.clientWidth) return;
+      event.preventDefault();
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? mosaic.clientWidth : 1;
+      mosaic.scrollLeft += event.deltaY * unit;
+    }, { passive: false });
+    document.querySelectorAll("[data-scroll]").forEach(button => button.addEventListener("click", () => {
+      mosaic.scrollBy({ left: Number(button.dataset.scroll) * mosaic.clientWidth * .75, behavior: reduceMotion ? "instant" : "smooth" });
+    }));
 
     function renderMosaic() {
       const cur = nodeOf(currentKey());
+      layer.classList.toggle("overview", cur.kind === "root");
+      $("#mosaic-scroll").hidden = isShelf(cur.k);
       links.replaceChildren();
-      if (isShelf(cur.k)) { mosaic.hidden = true; shelfM.hidden = false; renderShelf(shelfM, cur.k); return; }
+      if (isShelf(cur.k)) { mosaic.hidden = true; shelfM.hidden = false; updateMosaicArrows(); renderShelf(shelfM, cur.k); return; }
       mosaic.hidden = false; shelfM.hidden = true;
-      const W = mosaic.clientWidth, H = mosaic.clientHeight;
+      mosaic.scrollLeft = 0;
       layer.replaceChildren();
       const kids = sortedKids(cur.k);
       if (!kids.length) layer.append(h(`<div class="shelf-empty"><div><b>Aucun ${typeWord(2)} ici pour l’instant.</b><br>Choisissez un autre type ou remontez d’un niveau.</div></div>`));
-      squarify(kids, 0, 0, W, H).forEach((r) => layer.append(tileEl(r)));
+      const rects = mosaicLayout(kids, mosaic.clientHeight);
+      layer.style.height = `${mosaic.clientHeight}px`;
+      layer.style.width = `${Math.max(mosaic.clientWidth, ...rects.map(r => r.x + r.w))}px`;
+      rects.forEach((r) => layer.append(tileEl(r)));
       layer.querySelectorAll(":scope > .tile").forEach((t) => t.fill?.());
+      updateMosaicArrows();
       applyMosaicHighlights();
     }
 
     function tileEl(r) {
       const n = nodeOf(r.node), el = document.createElement("div");
-      const compact = r.w < 300 || r.h < 230;
-      el.className = `tile${n.kind === "a" ? " pole" : ""}${compact ? " compact" : ""}`;
+      const compact = false;
+      el.className = `tile${n.kind === "a" ? " pole" : ""}`;
       el.dataset.k = n.k;
       if (n.color) el.style.setProperty("--c", n.color);
       place(el, r);
@@ -946,94 +1092,58 @@
       el.fill = () => {
         const bw = body.clientWidth, bh = body.clientHeight;
         if (bw < 30 || bh < 20) return;
-        if (n.kind === "a") miniShelf(body, n.id, bw, bh); else renderNest(body, n.k, bw, bh);
+        if (n.kind === "a") {
+          body.innerHTML = `<p style="margin:10px 0;color:var(--ink-2);line-height:1.6">${esc(n.sub)}<br>Ouvrir l’étagère et découvrir les ${cnt} ${typeWord(cnt)} →</p>`;
+        } else renderNest(body, n.k, bw, bh);
       };
       el.addEventListener("click", () => zoomIn(pathOf(n.k), relRect(el)));
       return el;
     }
-    function renderNest(container, k, W, H) {
-      squarify(sortedKids(k), 0, 0, W, H).forEach((g) => {
+    function renderNest(container, k, width, height) {
+      squarify(sortedKids(k), 0, 0, width, height).forEach((g, index) => {
         const c = nodeOf(g.node);
         if (c.kind === "s") {
           const fr = document.createElement("div");
           fr.className = "frame"; fr.dataset.k = c.k;
-          place(fr, g, 4);
+          place(fr, g, 3);
           const lb = h(`<button class="frame-label" type="button">${esc(c.name)}</button>`);
           lb.addEventListener("click", (e) => { e.stopPropagation(); zoomIn(pathOf(c.k), relRect(fr)); });
           const inner = document.createElement("div");
           inner.className = "frame-inner";
           fr.append(lb, inner);
           container.append(fr);
-          const iw = g.w - 4 - 6, ih = g.h - 4 - 21;
-          if (iw > 24 && ih > 16) renderNest(inner, c.k, iw, ih);
+          renderNest(inner, c.k, g.w - 9, g.h - 24);
           return;
         }
         const b = document.createElement("button");
         b.type = "button"; b.className = "inner-blk"; b.dataset.k = c.k;
         b.style.setProperty("--c", c.color);
+        b.style.setProperty("--shade", `${14 + index % 6 * 6}%`);
         place(b, g, 3);
-        const w = g.w - 3, hh = g.h - 3, cnt = itemsOf(c.id).length;
+        const cnt = itemsOf(c.id).length;
         b.title = `${c.name} · ${cnt} ${typeWord(cnt)} · ${ENT[APPS[c.id].entity].name}`;
         b.setAttribute("aria-label", `Ouvrir le pôle ${c.name}, ${cnt} ${typeWord(cnt)}`);
-        if (w > 40 && hh > 18) b.innerHTML = `<span class="nm">${esc(c.name)}</span>${hh > 44 ? `<span class="cnt">${cnt} ${typeWord(cnt)}</span>` : ""}`;
-        if (w > 100 && hh > 96) miniShelf(b, c.id, w, hh, 34);
+        b.innerHTML = `<span class="nm">${esc(c.name)}</span>${g.h > 55 ? `<span class="cnt">${cnt} ${typeWord(cnt)} · Ouvrir →</span>` : ""}`;
         b.addEventListener("click", (e) => { e.stopPropagation(); zoomIn(pathOf(c.k), relRect(b)); });
         container.append(b);
       });
     }
-    // Aperçu de l'étagère : une barre par API (épaisseur = endpoints, hauteur = usage)
     const LOGMAX = Math.log10(Math.max(...APIS.map((a) => a.calls)));
     const usageRatio = (it) => (it.type === "api" ? Math.max(0, Math.min(1, (Math.log10(Math.max(50, it.calls)) - 1.7) / (LOGMAX - 1.7))) : .5);
-    function miniShelf(host, aid, w, hh, top = 0) {
-      const items = [...itemsOf(aid)].sort((a, b) => b.calls - a.calls);
-      if (!items.length) return;
-      const avail = w - 16 - items.length * 2, sum = items.reduce((s, it) => s + it.endpoints.length, 0);
-      const k = Math.max(.6, Math.min(3.2, avail / sum)), c = DOMAINS[APPS[aid].domain].color;
-      const m = document.createElement("span");
-      m.className = "mini"; m.style.setProperty("--c", c);
-      m.style.height = `${Math.max(10, Math.min(70, hh - top - 16))}px`;
-      let used = 0;
-      items.forEach((it, i) => {
-        const bw = Math.max(1.5, it.endpoints.length * k);
-        if (used + bw > w - 16) return;
-        used += bw + 2;
-        const bar = document.createElement("i");
-        bar.style.cssText = `width:${bw}px;height:${30 + usageRatio(it) * 70}%;--k:${it.status === "deprecated" ? 25 : 55 + (i % 3) * 15}%`;
-        m.append(bar);
-      });
-      host.append(m);
-    }
 
-    /* ---------- Zoom animé entre niveaux ---------- */
-    let busy = false;
-    const zoomTransform = (r) => { const W = mosaic.clientWidth, H = mosaic.clientHeight, sx = W / r.w, sy = H / r.h; return `translate(${-r.x * sx}px, ${-r.y * sy}px) scale(${sx}, ${sy})`; };
+    /* ---------- Navigation entre niveaux ---------- */
     function enterAnim() {
       if (reduceMotion) return drawLinks();
       layer.classList.add("enter"); void layer.offsetWidth;
       layer.classList.add("anim"); layer.classList.remove("enter");
       setTimeout(() => { layer.classList.remove("anim"); drawLinks(); }, 520);
     }
-    function zoomIn(path, rect) {
-      if (busy) return;
+    function zoomIn(path) {
       closeBook(false);
-      if (reduceMotion || !rect || mosaic.hidden) { navigate(path); return; }
-      busy = true; links.replaceChildren();
-      layer.classList.add("anim", "zooming");
-      layer.style.transform = zoomTransform(rect); layer.style.opacity = ".35";
-      setTimeout(() => { layer.classList.remove("anim", "zooming"); layer.style.transform = ""; layer.style.opacity = ""; busy = false; navigate(path); }, 470);
+      navigate(path);
     }
     function zoomOutTo(path) {
-      if (busy) return;
-      const leaving = state.path[path.length];
-      navigate(path, { quiet: true });
-      const t = leaving && layer.querySelector(`[data-k="${leaving}"]`);
-      if (!t || reduceMotion) { enterAnim(); return; }
-      busy = true; links.replaceChildren();
-      layer.classList.add("zooming");
-      layer.style.transform = zoomTransform(relRect(t)); layer.style.opacity = ".35";
-      void layer.offsetWidth;
-      layer.classList.add("anim"); layer.style.transform = ""; layer.style.opacity = "";
-      setTimeout(() => { layer.classList.remove("anim", "zooming"); busy = false; drawLinks(); }, 520);
+      navigate(path);
     }
 
     /* ---------- Mises en évidence : recherche & relations ---------- */
@@ -1066,11 +1176,12 @@
     }
     function drawLinks() {
       links.replaceChildren();
-      if (!state.rel || busy || mosaic.hidden || state.view !== "mosaic") return;
+      if (!state.rel || mosaic.hidden || state.view !== "mosaic" || state.home) return;
       const R = relSets(), focal = anchorFor(R.focus), it = ITEM[state.rel];
       if (!focal) return;
       links.innerHTML = `<defs>${[["dep", "#1c7ed6"], ["use", "#e8590c"], ["evt", "#9c36b5"]].map(([k, c]) => `<marker id="arr-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0 0 10 5 0 10Z" fill="${c}"/></marker>`).join("")}</defs>`;
-      const center = (el) => { const r = relRect(el); return [r.x + r.w / 2, r.y + r.h / 2]; };
+      links.style.height = `${mosaic.scrollHeight}px`;
+      const center = (el) => { const r = relRect(el); return [r.x + mosaic.scrollLeft + r.w / 2, r.y + mosaic.scrollTop + r.h / 2]; };
       const drawn = new Set();
       const edge = (from, to, kind, calls) => {
         if (!from || !to || from === to) return;
@@ -1099,8 +1210,6 @@
       return items.sort(s === "name" ? (a, b) => a.name.localeCompare(b.name, "fr") : s === "endpoints" ? (a, b) => b.endpoints.length - a.endpoints.length : s === "compliance" ? (a, b) => b.score - a.score || b.calls - a.calls : (a, b) => b.calls - a.calls);
     }
     const shelfApps = (k) => appsUnder(k).sort((a, b) => APPS[b].apis.length - APPS[a].apis.length);
-    // Ordre de lecture des livres d'un quartier : rayon par rayon
-    const shelfItems = (k) => shelfApps(k).flatMap((aid) => sortItems([...itemsOf(aid)]));
     function renderShelf(host, k) {
       const n = nodeOf(k), e = ENT[APPS[n.id].entity], apps = shelfApps(k), apis = apps.flatMap((aid) => APPS[aid].apis);
       const eps = apis.reduce((s, x) => s + x.endpoints.length, 0), calls = apis.reduce((s, x) => s + x.calls, 0);
@@ -1117,7 +1226,7 @@
             <button class="pill" type="button" data-to-city>🏙 Voir dans la cité</button>
           </div>
         </div>
-        <div class="shelf-legend">Un livre = une API · Épaisseur = endpoints · Hauteur = usage · Bandes = méthodes <i style="background:#2f9e44"></i>GET<i style="background:#1c7ed6"></i>POST<i style="background:#f59f00"></i>PATCH<i style="background:#e03131"></i>DELETE · ★ = conformité 100 % · livre penché = dépréciée</div>
+        <div class="shelf-legend">Un livre couché = une API · Livres empilés verticalement, titres sur les tranches · Épaisseur = endpoints (avec un minimum lisible) · Longueur = usage · Bandes = méthodes <i style="background:#2f9e44"></i>GET<i style="background:#1c7ed6"></i>POST<i style="background:#f59f00"></i>PATCH<i style="background:#e03131"></i>DELETE · ★ = conformité 100 %</div>
         <div class="shelf-body"></div></div>`;
       host.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => zoomOutTo(pathOf(b.dataset.go))));
       host.querySelectorAll("[data-sort]").forEach((b) => b.addEventListener("click", () => { state.shelfSort = b.dataset.sort; renderShelf(host, k); }));
@@ -1127,7 +1236,6 @@
       layoutBooks(host.querySelector(".shelf-body"), k, true);
     }
     function layoutBooks(body, k, animate) {
-      const avail = Math.max(240, body.clientWidth - 64);
       body.replaceChildren();
       let idx = 0, total = 0;
       shelfApps(k).forEach((aid) => {
@@ -1135,13 +1243,14 @@
         if (!items.length) return;
         total += items.length;
         const apis = a.apis, comp = Math.round(apis.reduce((s, x) => s + x.score, 0) / apis.length);
-        const sec = h(`<section class="rayon solo" data-app="${aid}" style="--c:${DOMAINS[a.domain].color}"><div class="rayon-head"><span class="dom-dot"></span><b>${esc(a.name)}</b><span>${esc(DOMAINS[a.domain].name)} · ${items.length} ${typeWord(items.length)} · conformité ${comp} % · ${esc(a.owner.name)}</span></div></section>`);
-        let row = null, used = 0;
+        const sec = h(`<section class="rayon solo" data-app="${aid}" style="--c:${poleColor(aid)}"><div class="rayon-head"><span class="dom-dot"></span><b>${esc(a.name)}</b><span>${esc(DOMAINS[a.domain].name)} · ${items.length} ${typeWord(items.length)} · conformité ${comp} % · ${esc(a.owner.name)}</span></div></section>`);
+        const stacks = document.createElement("div");
+        stacks.className = "book-stacks";
+        sec.append(stacks);
+        let row = null;
         items.forEach((it) => {
-          const w = it.type === "api" ? Math.round(Math.max(24, Math.min(64, 20 + it.endpoints.length * 3.6))) : 46;
-          if (!row || used + w + 3 > avail) { row = document.createElement("div"); row.className = "plank-row"; sec.append(row); used = 0; }
-          used += w + 3;
-          row.append(bookEl(it, w, idx++));
+          if (!row || row.children.length >= 6) { row = document.createElement("div"); row.className = "plank-row"; stacks.append(row); }
+          row.append(bookEl(it, idx++));
         });
         body.append(sec);
       });
@@ -1153,13 +1262,13 @@
       state.focusApp = null;
       highlightBooks();
     }
-    function bookEl(it, w, i) {
+    function bookEl(it, i) {
       const b = document.createElement("button");
       const c = colorOf(it);
       b.type = "button";
       b.className = `book ${it.type}${it.status === "deprecated" ? " deprecated" : ""}`;
       b.dataset.id = it.id;
-      b.style.cssText = `--c:color-mix(in srgb, ${c} ${82 + (i % 4) * 6}%, ${i % 2 ? "#000" : "#fff"});--w:${w}px;--hh:${Math.round(108 + usageRatio(it) * 112)}px`;
+      b.style.cssText = `--c:color-mix(in srgb, ${c} ${82 + (i % 4) * 6}%, #000);--w:${Math.round(88 + usageRatio(it) * 12)}%;--hh:${44 + it.endpoints.length * 2}px`;
       const ms = {};
       it.endpoints.forEach(([m]) => (ms[m] = (ms[m] || 0) + 1));
       const sc = { stable: "#2f9e44", beta: "#fab005", deprecated: "#868e96", preview: "#7048e8" }[it.status];
@@ -1178,12 +1287,17 @@
 
     /* ---------- Livre ouvert ---------- */
     const bookOv = $("#book");
-    let bookOrder = [];
+    const BOOK_PAGES = [
+      ["commercial", "Présentation commerciale"], ["functional", "Fonctionnel"],
+      ["endpoints", "Endpoints & essais"], ["cons", "Consommateurs"],
+      ["contact", "Contact"], ["gouv", "Gouvernance"], ["rel", "Relations"]
+    ];
+    let bookPage = 0, bookReturnFocus = null;
     function openBook(id, { push = true } = {}) {
       const it = ITEM[id];
       hideTip();
-      bookOrder = shelfItems(containerOf(it.app)).map((x) => x.id);
-      if (!bookOrder.includes(id)) bookOrder = [id, ...bookOrder];
+      if (!bookOv.classList.contains("open")) bookReturnFocus = document.activeElement;
+      bookPage = 0;
       state.api = id;
       renderBook(it, "open");
       if (push) syncHash();
@@ -1192,48 +1306,56 @@
     function closeBook(push = true) {
       if (!bookOv.classList.contains("open")) return;
       bookOv.classList.remove("open");
+      $(".app").inert = false;
       state.api = null;
       if (push) syncHash();
       renderCrumbs();
+      if (bookReturnFocus?.isConnected) bookReturnFocus.focus({ preventScroll: true });
     }
     function tocHtml(it) {
       const groups = [["Collection", (p) => p === it.base || p.endsWith("/search")], ["Ressource", (p) => p.endsWith("/{id}")], ["Actions sur la ressource", (p) => /\/\{id\}\/./.test(p)]];
-      let page = 3;
-      return `<h3 class="toc-title">Sommaire</h3><p class="toc-sub">${it.endpoints.length} points d’entrée · cliquez pour tourner la page et tester</p><div class="toc-base">${esc(it.base)}</div>
-        ${groups.map(([label, test]) => { const eps = it.endpoints.map((e, i) => [e, i]).filter(([[, p]]) => test(p)); if (!eps.length) return ""; return `<div class="toc-group">${label}</div>${eps.map(([[m, p, l], i]) => `<button class="toc-item" type="button" data-ep="${i}">${verbHtml(m)}<code>${esc(p.slice(it.base.length) || "/")}</code><span class="lead"></span><span class="lbl">${esc(l)}</span><span class="pg">p. ${page++}</span></button>`).join("")}`; }).join("")}`;
+      return `<h3 class="toc-title">Endpoints & essais</h3><p class="toc-sub">${it.endpoints.length} points d’entrée de cette API · cliquez pour tester en simulation locale</p><div class="toc-base">${esc(it.base)}</div>
+        ${groups.map(([label, test]) => { const eps = it.endpoints.map((e, i) => [e, i]).filter(([[, p]]) => test(p)); if (!eps.length) return ""; return `<div class="toc-group">${label}</div>${eps.map(([[m, p, l], i]) => `<button class="toc-item" type="button" data-ep="${i}">${verbHtml(m)}<code>${esc(p.slice(it.base.length) || "/")}</code><span class="lead"></span><span class="lbl">${esc(l)}</span><span class="pg">Tester →</span></button>`).join("")}`; }).join("")}`;
     }
     function renderBook(it, anim) {
-      const D = DOMAINS[it.domain], idx = bookOrder.indexOf(it.id), a = APPS[it.app], e = ENT[it.entity];
-      bookOv.innerHTML = `<div class="tome" style="--c:${D.color}">
-          <button class="tome-close" type="button" aria-label="Fermer le livre">× Fermer</button>
+      const a = APPS[it.app], e = ENT[it.entity], [section, label] = BOOK_PAGES[bookPage];
+      const content = section === "commercial" ? `<h3 class="toc-title">Présentation commerciale</h3><p class="pg-desc">${esc(it.desc)}</p>
+          <h4>Offre & interlocuteur</h4><p>API proposée par ${esc(e.name)}, au sein du pôle ${esc(a.name)}. Domaine : ${esc(DOMAINS[it.domain].name)}.</p>
+          <div class="impact">Les bénéfices métier, cas d’usage validés, conditions d’accès, tarifs et engagements de service restent à renseigner avec l’équipe produit. Aucun contenu commercial réel n’est fourni par ce jeu de démonstration.</div>
+          <h4>Échanger avec l’équipe</h4><p>${esc(it.contact.owner.name)} · ${esc(it.contact.team)}</p><button class="btn" type="button" data-page="4">Contacter le responsable →</button>`
+        : section === "functional" ? `<h3 class="toc-title">Fonctionnel</h3>${ficheHtml(it)}<h4>Opérations proposées</h4>${endpointsHtml(it)}`
+        : section === "endpoints" ? tocHtml(it)
+        : section === "cons" ? `<h3 class="toc-title">Consommateurs</h3>${consumersHtml(it)}`
+        : section === "contact" ? `<h3 class="toc-title">Contact</h3>${contactHtml(it)}`
+        : section === "gouv" ? `<h3 class="toc-title">Gouvernance</h3>${governanceHtml(it)}`
+        : `<h3 class="toc-title">Relations</h3>${relationsHtml(it, "mosaic")}`;
+      bookOv.innerHTML = `<div class="tome" style="--c:${colorOf(it)}">
+          <div class="book-tools"><span class="note">Une API · ${BOOK_PAGES.length} pages</span>
+          <button class="pill" type="button" data-book-mode>${bookOv.classList.contains("standard") ? "Vue livre" : "Fiche standard"}</button>
           <button class="tome-full" type="button" aria-label="${bookOv.classList.contains("full") ? "Quitter le plein écran" : "Afficher le livre en plein écran"}">${bookOv.classList.contains("full") ? "⤡ Réduire" : "⤢ Plein écran"}</button>
-          <button class="tome-nav prev" type="button" ${idx <= 0 ? "disabled" : ""} aria-label="Livre précédent">‹</button>
-          <button class="tome-nav next" type="button" ${idx >= bookOrder.length - 1 ? "disabled" : ""} aria-label="Livre suivant">›</button>
+          <button class="tome-close" type="button" aria-label="Retour à l’étagère">× Retour à l’étagère</button></div>
           <article class="page left">
             <div class="pg-kicker"><button type="button" data-go="e:${e.id}">${esc(e.name)}</button>${a.sub ? ` › <button type="button" data-go="s:${a.sub}">${esc(SUBS[a.sub].name)}</button>` : ""} › <button type="button" data-go="a:${a.id}">${esc(a.name)}</button></div>
             <h2 class="pg-title">${esc(it.name)}</h2>
             <div class="pg-meta"><span class="status ${STATUS[it.status].cls}">${STATUS[it.status].label}</span><span>${esc(it.version)}</span>${it.type === "api" ? `<span style="color:${COMP[it.comp].color};font-weight:800">${it.score === 100 ? "★ " : ""}Conformité ${it.score} %</span>` : ""}<button class="pill" type="button" data-to-city>🏙 Voir dans la cité</button></div>
-            <div class="sec-nav">${[["fiche", "Fiche"], ["cons", "Consommateurs"], ["contact", "📞 Contact"], ["gouv", "Gouvernance"], ["rel", "Relations"]].map(([k, l]) => `<button type="button" data-jump="${k}">${l}</button>`).join("")}</div>
-            <h3 class="pg-h" id="sec-fiche">Fiche</h3>${ficheHtml(it)}
-            <h3 class="pg-h" id="sec-cons">Consommateurs</h3>${consumersHtml(it)}
-            <h3 class="pg-h" id="sec-contact">Contact</h3>${contactHtml(it)}
-            <h3 class="pg-h" id="sec-gouv">Gouvernance</h3>${governanceHtml(it)}
-            <h3 class="pg-h" id="sec-rel">Relations</h3>${relationsHtml(it, "mosaic")}
-            <div class="folio">Livre ${idx + 1} sur ${bookOrder.length} · ${esc(a.name)}</div>
+            <nav class="book-outline" aria-label="Pages de cette API">${BOOK_PAGES.map(([, title], i) => `<button type="button" data-page="${i}" ${i === bookPage ? 'aria-current="page"' : ""}>${i + 1}. ${title}</button>`).join("")}</nav>
           </article>
-          <article class="page right"><div class="right-inner">${tocHtml(it)}</div></article>
+          <article class="page right" aria-label="${label}"><div class="right-inner">${content}</div></article>
+          <div class="book-pager"><button class="pill prev" type="button" ${bookPage === 0 ? "disabled" : ""} aria-label="Page précédente">← Page précédente</button><span aria-live="polite">Page ${bookPage + 1} / ${BOOK_PAGES.length} · ${label}</span><button class="pill next" type="button" ${bookPage === BOOK_PAGES.length - 1 ? "disabled" : ""} aria-label="Page suivante">Page suivante →</button></div>
         </div>`;
       bookOv.classList.add("open");
+      $(".app").inert = true;
       const left = bookOv.querySelector(".page.left"), right = bookOv.querySelector(".page.right"), inner = bookOv.querySelector(".right-inner");
       bookOv.querySelector(".tome-close").addEventListener("click", () => closeBook());
       bookOv.querySelector(".tome-full").addEventListener("click", (ev) => { const full = bookOv.classList.toggle("full"); ev.currentTarget.textContent = full ? "⤡ Réduire" : "⤢ Plein écran"; ev.currentTarget.setAttribute("aria-label", full ? "Quitter le plein écran" : "Afficher le livre en plein écran"); });
+      bookOv.querySelector("[data-book-mode]").addEventListener("click", (ev) => { const standard = bookOv.classList.toggle("standard"); ev.currentTarget.textContent = standard ? "Vue livre" : "Fiche standard"; });
       bookOv.querySelector(".prev").addEventListener("click", () => turn(-1));
       bookOv.querySelector(".next").addEventListener("click", () => turn(1));
       bookOv.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => { closeBook(false); if (b.dataset.go.startsWith("a:")) state.focusApp = b.dataset.go.slice(2); navigate(pathOf(b.dataset.go)); }));
       bookOv.querySelector("[data-to-city]").addEventListener("click", () => { const id = it.id; closeBook(false); setView("city"); selectApi(id, "fiche"); });
-      bookOv.querySelectorAll("[data-jump]").forEach((b) => b.addEventListener("click", () => left.querySelector(`#sec-${b.dataset.jump}`).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" })));
-      wireDetail(left, it, { openItem: (id) => openFromAnywhere(id), showRel: (id) => { closeBook(false); setRel(id); navigate([]); }, setNet: () => {} });
-      const wireToc = () => inner.querySelectorAll("[data-ep]").forEach((b) => b.addEventListener("click", () => flip(() => { inner.replaceChildren(renderTry(it, Number(b.dataset.ep), () => flip(() => { inner.innerHTML = tocHtml(it); wireToc(); }))); })));
+      bookOv.querySelectorAll("[data-page]").forEach((b) => b.addEventListener("click", () => { const dir = Number(b.dataset.page) - bookPage; turn(dir); }));
+      wireDetail(inner, it, { openItem: (id) => openFromAnywhere(id), showRel: (id) => { closeBook(false); setRel(id); navigate([]); }, setNet: () => {} });
+      const wireToc = () => inner.querySelectorAll("[data-ep]").forEach((b) => b.addEventListener("click", () => flip(() => { inner.replaceChildren(renderTry(it, Number(b.dataset.ep), () => renderBook(it))); })));
       wireToc();
       function flip(swap) {
         if (reduceMotion) { swap(); return; }
@@ -1246,12 +1368,12 @@
       } else if (!reduceMotion && anim) {
         bookOv.querySelector(".tome").animate([{ transform: `translateX(${anim * 40}px)`, opacity: .3 }, { transform: "none", opacity: 1 }], { duration: 300, easing: "ease-out" });
       }
-      bookOv.querySelector(".tome-close").focus({ preventScroll: true });
+      bookOv.querySelector(anim === "open" ? ".tome-close" : `.book-outline [data-page="${bookPage}"]`).focus({ preventScroll: true });
     }
     function turn(dir) {
-      const idx = bookOrder.indexOf(state.api) + dir;
-      if (idx < 0 || idx >= bookOrder.length) return;
-      state.api = bookOrder[idx];
+      const idx = bookPage + dir;
+      if (idx < 0 || idx >= BOOK_PAGES.length) return;
+      bookPage = idx;
       renderBook(ITEM[state.api], dir);
       syncHash(); renderCrumbs();
     }
@@ -1264,7 +1386,7 @@
        ===================================================================== */
     const NS = "http://www.w3.org/2000/svg";
     const el = (tag, attrs = {}, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.append(n); return n; };
-    const U = 32, CELL = 1.1, FOOT = .66, BPAD = .45, STREET = 1.5, SUBPAD = .9, SUBGAP = 2.4, DPAD = 1.6, AVENUE = 11, SECPAD = 3, SECGAP = 13;
+    const U = 32, CELL = 3.4, FOOT = .66, BPAD = 1.1, STREET = 3.2, SUBPAD = .9, SUBGAP = 3.6, DPAD = 2.4, AVENUE = 13, SECPAD = 3, SECGAP = 13;
     const M_FLAT = [U, 0, 0, U, 0, 0], M_ISO = [U, U / 2, -U, U / 2, 0, 0];
     let M = [...M_FLAT], cityMode = "flat";
     const P = (x, y, m = M) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
@@ -1867,7 +1989,9 @@
        ENVELOPPE COMMUNE : vues, navigation, recherche, adresse partageable
        ===================================================================== */
     function navigate(path, { quiet = false, push = true } = {}) {
+      if (state.home) setView("mosaic", { push: false });
       state.path = path;
+      renderSummary();
       if (state.view === "mosaic") {
         renderMosaic();
         if (!quiet && !isShelf(currentKey())) enterAnim();
@@ -1877,11 +2001,42 @@
         refreshCity();
       }
       if (push) syncHash();
-      renderCrumbs(); renderSummary(); renderCityHint();
+      renderCrumbs(); renderCityHint();
     }
     let cityReady = false;
+    function showHome(push = true) {
+      closeBook(false);
+      closeSide({ push: false });
+      state.home = true; state.path = []; state.api = null; state.rel = null;
+      hideTip();
+      $("#stage").classList.remove("rel-open");
+      $("#relbar").classList.remove("open");
+      $(".app").classList.add("is-home");
+      $("#home-view").hidden = false;
+      $("#home-view").classList.remove("off");
+      $("#mosaic-view").classList.add("off");
+      cityView.classList.add("off");
+      $("#crumbs").replaceChildren();
+      document.querySelectorAll(".views button").forEach((b) => {
+        const on = b.dataset.view === "home";
+        b.classList.toggle("on", on); b.setAttribute("aria-selected", on);
+      });
+      if (push) syncHash();
+    }
+    $("#home-stats").innerHTML = `<div><b>${ENTITIES.length}</b>entités à découvrir</div><div><b>${APP_LIST.length}</b>pôles de compétences</div><div><b>${fmt(APIS.length)}</b>API dans le catalogue</div>`;
+    document.querySelectorAll("[data-home-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.homeView)));
+    $("#nav-back").addEventListener("click", () => {
+      if (!state.path.length) { showHome(); return; }
+      if (state.view === "mosaic") zoomOutTo(state.path.slice(0, -1));
+      else { closeSide({ push: false }); navigate(state.path.slice(0, -1)); }
+    });
     function setView(v, { push = true } = {}) {
-      if (state.view === v && cityReady) return;
+      if (v === "home") { showHome(push); return; }
+      if (state.view === v && cityReady && !state.home) return;
+      state.home = false;
+      $(".app").classList.remove("is-home");
+      $("#home-view").classList.add("off");
+      $("#home-view").hidden = true;
       const from = state.view;
       state.view = v;
       hideTip();
@@ -1889,6 +2044,8 @@
       cityView.classList.toggle("off", v !== "city");
       document.querySelectorAll(".views button").forEach((b) => { const on = b.dataset.view === v; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
       $("#metric-group").hidden = v !== "mosaic";
+      $("#mosaic-scroll").hidden = v !== "mosaic" || isShelf(currentKey());
+      renderSummary();
       if (v === "mosaic") {
         const api = state.api;
         side.classList.remove("open");
@@ -1906,11 +2063,15 @@
       if (v === "city" && state.rel) setNet(state.rel, state.net);
       renderRelbar();
       if (push) syncHash();
-      renderCrumbs(); renderSummary(); renderCityHint();
+      renderCrumbs(); renderCityHint();
     }
     document.querySelectorAll(".views button").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
 
     function renderCrumbs() {
+      if (state.home) return;
+      const parent = state.path.length > 1 ? nodeOf(state.path[state.path.length - 2]).name : "Catalogue";
+      $("#nav-back").textContent = state.path.length ? `← ${parent}` : "← Accueil";
+      $("#nav-back").setAttribute("aria-label", state.path.length ? `Revenir à ${parent}` : "Revenir à l’accueil");
       const nav = $("#crumbs"), levels = { root: "Groupe", e: "Entité · ville", s: "Sous-entité", a: "Pôle · quartier" };
       const parts = [ROOT, ...state.path];
       nav.replaceChildren();
@@ -1982,6 +2143,7 @@
     }
     function openFromAnywhere(id) {
       const it = ITEM[id];
+      if (state.home) setView("mosaic", { push: false });
       if (state.view === "city" && it.type === "api") { selectApi(id, "fiche"); return; }
       if (state.view === "city") setView("mosaic", { push: false });
       if (currentKey() !== containerOf(it.app)) navigate(pathOf(`a:${it.app}`), { quiet: true });
@@ -2036,12 +2198,22 @@
       items[resIndex]?.scrollIntoView({ block: "nearest" });
     });
     document.addEventListener("keydown", (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); q.focus(); q.select(); return; }
-      if (document.activeElement === q || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { if (bookOv.classList.contains("open")) return; e.preventDefault(); q.focus(); q.select(); return; }
       if (bookOv.classList.contains("open")) {
-        if (e.key === "Escape") closeBook(); else if (e.key === "ArrowRight") turn(1); else if (e.key === "ArrowLeft") turn(-1);
+        if (e.key === "Tab") {
+          const focusable = [...bookOv.querySelectorAll('button:not(:disabled), a[href], input, textarea')].filter((el) => el.getClientRects().length);
+          const first = focusable[0], last = focusable.at(-1);
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          return;
+        }
+        if (e.key === "Escape") closeBook();
+        else if (!/^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) {
+          if (e.key === "ArrowRight") turn(1); else if (e.key === "ArrowLeft") turn(-1);
+        }
         return;
       }
+      if (document.activeElement === q || /^(INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
       if (e.key !== "Escape") return;
       if (side.classList.contains("full") && state.view === "city") toggleSideFull(false);
       else if (side.classList.contains("open") && state.view === "city") closeSide();
@@ -2051,12 +2223,13 @@
 
     /* ---------- Adresse partageable : #/vue/e:…/s:…/a:…/api:…/onglet:…/reseau:… ---------- */
     function hashFor() {
+      if (state.home) return "#/accueil";
       return `#/${state.view === "city" ? "cite" : "mosaique"}${state.path.map((k) => `/${k}`).join("")}${state.api ? `/api:${state.api}` : ""}${state.api && state.view === "city" && state.tab !== "fiche" ? `/onglet:${state.tab}` : ""}${state.rel ? `/reseau:${state.rel}:${state.net}` : ""}`;
     }
     function syncHash() { const hsh = hashFor(); if (location.hash !== hsh) history.pushState(null, "", hsh); }
     function parseHash() {
       const seg = decodeURIComponent(location.hash).replace(/^#\/?/, "").split("/").filter(Boolean);
-      const out = { view: seg[0] === "cite" ? "city" : "mosaic", path: [], api: null, tab: "fiche", rel: null, net: "water" };
+      const out = { home: !seg.length || seg[0] === "accueil", view: seg[0] === "cite" ? "city" : "mosaic", path: [], api: null, tab: "fiche", rel: null, net: "water" };
       seg.slice(1).forEach((x) => {
         if (/^[esa]:/.test(x) && nodeOfSafe(x)) out.path.push(x);
         else if (x.startsWith("api:") && ITEM[x.slice(4)]) out.api = x.slice(4);
@@ -2070,6 +2243,8 @@
     const nodeOfSafe = (k) => { const id = k.slice(2); return k[0] === "e" ? ENT[id] : k[0] === "s" ? SUBS[id] : APPS[id]; };
     function applyHash() {
       const st = parseHash();
+      if (st.home) { showHome(false); return; }
+      if (state.home) setView(st.view, { push: false });
       state.tab = st.tab; state.rel = st.rel; state.net = st.net;
       closeBook(false);
       if (state.view !== st.view || !cityReady) { state.path = st.path; state.api = st.view === "city" ? st.api : null; setView(st.view, { push: false }); }
@@ -2098,6 +2273,7 @@
       if (st.view === "city") { state.api = st.api; cityReady = true; state.view = "mosaic"; setView("city", { push: false }); }
       else { cityReady = true; setView("mosaic", { push: false }); if (st.api) openBook(st.api, { push: false }); }
       renderRelbar();
+      if (st.home) showHome(false);
       history.replaceState(null, "", hashFor());
     }
     requestAnimationFrame(moveCars);

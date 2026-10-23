@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>PORTAL — Monde 3D des API</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="world"></div>
+  <div id="labels"></div>
+  <header>
+    <a class="brand" href="./"><span class="logo"></span>PORTAL <small>LAB / THREE.JS</small></a>
+    <div class="search"><label class="sr-only" for="search">Rechercher une API</label><input id="search" type="search" placeholder="Rechercher une API, une ville, un pôle…" autocomplete="off"><div id="results" hidden></div></div>
+    <button id="theme" aria-label="Passer en mode jour">☀ Jour</button>
+  </header>
+  <nav class="navigator" aria-label="Explorer le catalogue">
+    <span class="eyebrow">LE CAMPUS DES DÉVELOPPEURS</span>
+    <h1>Bienvenue dans<br>la cité des API.</h1>
+    <p>25 villes · 153 quartiers · 1 500 bâtiments.<br>Chaque bâtiment est une API, chaque étage un endpoint.</p>
+    <label for="entity">Aller dans une ville</label>
+    <select id="entity"><option value="">Vue du monde</option></select>
+    <label for="pole">Explorer un quartier</label>
+    <select id="pole" disabled><option value="">Choisir un quartier</option></select>
+    <div class="nav-actions"><button id="overview">Vue du monde</button><button id="back" disabled>← Retour</button></div>
+    <div class="divider"></div>
+    <label class="eyebrow">NAVIGATION</label>
+    <button id="fly">Entrer en vol libre</button>
+    <p class="help">Souris gauche : tourner à 360°<br>Droite : déplacer · Molette : avancer<br>Double-clic : rejoindre un point</p>
+    <p class="help">Vol libre : souris pour regarder · WASD / ZQSD pour avancer · E / C pour monter / descendre · Maj pour accélérer · Échap pour quitter.</p>
+    <button id="relations" aria-pressed="false">Afficher les relations</button>
+    <button id="people" aria-pressed="true">Mettre les promenades en pause</button>
+    <p class="hint">Sélectionne une API pour voir ses dépendances et ses consommateurs.</p>
+  </nav>
+  <main aria-label="Cité interactive des API">
+    <p id="loading" role="status">Construction du monde…</p>
+    <div id="crosshair" hidden>+</div>
+    <div id="hover" hidden><strong></strong><span></span><button data-action="overview">Ouvrir la fiche</button><button data-action="consumers" aria-label="Consommateurs">👤</button><button data-action="contact" aria-label="Contact">📞</button><button data-action="governance" aria-label="Gouvernance">🛡</button></div>
+    <aside id="panel" hidden aria-label="Fiche de l’API"><button id="close" aria-label="Fermer la fiche">×</button><p id="path" class="eyebrow"></p><h2 id="api-name"></h2><div id="badges"></div><nav id="tabs" aria-label="Sections de la fiche"></nav><div id="content"></div><button id="approach">Rejoindre ce bâtiment</button></aside>
+  </main>
+  <footer><span id="state">Initialisation</span><span id="stats"></span><span class="legend"><i></i> Production <i></i> Construction <i></i> Dépréciée · Or = conformité 100 %</span></footer>
+  <p class="sr-only" id="announcement" aria-live="polite"></p>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "portal-three-poc",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 4333 --strictPort",
+    "build": "vite build",
+    "test": "node --test layout.test.js",
+    "test:browser": "node browser.test.js"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "vite": "6.4.5"
+  }
+}
