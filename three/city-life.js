@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { hash, BUILDING_SPACING } from './layout.js';
+import { complianceLabel } from './building-profile.js';
 
 const pose = new THREE.Object3D();
 
@@ -31,12 +32,12 @@ export function buildStreets(scene, world) {
       const rows = Math.ceil(pole.apis.length / pole.columns);
       for (let r = 0; r < rows; r++) {
         const z = pole.z + 9 + r * BUILDING_SPACING.z;
-        lanes.push({ x: pole.x + pole.width / 2 - 3, y: 0.32, z: z + 13,
+        lanes.push({ x: pole.x + pole.width / 2 - 3, y: 0.32, z: z + 20,
           w: pole.width - 4, h: 0.05, d: 7 });
-        pavement.push({ x: pole.x + pole.width / 2 - 3, y: 0.4, z: z + 7,
-          w: pole.width - 4, h: 0.22, d: 4.8 });
+        pavement.push({ x: pole.x + pole.width / 2 - 3, y: 0.4, z: z + 10,
+          w: pole.width - 4, h: 0.22, d: 11.8 });
         for (let x = pole.x; x < pole.x + pole.width - 8; x += 8) {
-          markings.push({ x, y: 0.36, z: z + 13, w: 3, h: 0.02, d: 0.18 });
+          markings.push({ x, y: 0.36, z: z + 20, w: 3, h: 0.02, d: 0.18 });
         }
         for (let c = 0; c < pole.columns; c++) {
           if (r * pole.columns + c >= pole.apis.length) continue;
@@ -47,14 +48,14 @@ export function buildStreets(scene, world) {
             color: ['#6fa47c', '#4b927b', '#87b385'][c % 3] });
           benches.push({ x: x + 9.5, y: 0.9, z: z + 6, w: 2.5, h: 0.3, d: 0.8 });
           benches.push({ x: x + 9.5, y: 1.35, z: z + 6.4, w: 2.5, h: 0.7, d: 0.16 });
-          lamps.push({ x: x - 6.5, y: 2.7, z: z + 7, w: 0.16, h: 4.7, d: 0.16 });
-          lights.push({ x: x - 6.5, y: 5.1, z: z + 7, w: 0.9, h: 0.3, d: 0.9 });
+          lamps.push({ x: x - 6.5, y: 2.7, z: z - 4.5, w: 0.16, h: 4.7, d: 0.16 });
+          lights.push({ x: x - 6.5, y: 5.1, z: z - 4.5, w: 0.9, h: 0.3, d: 0.9 });
         }
       }
     }
   }
   for (const b of world.buildings) {
-    plinths.push({ x: b.x, y: 0.43, z: b.z, w: 8.2, h: 0.35, d: 8.2 });
+    plinths.push({ x: b.x, y: 0.43, z: b.z + 2, w: 11, h: 0.35, d: 12.2 });
     const p = apiSignPosition(b);
     boards.push({ x: p.x, y: p.y, z: p.z, w: 5.8, h: 2.7, d: 0.28 });
     for (const dx of [-1.9, 1.9]) {
@@ -71,26 +72,31 @@ export function buildStreets(scene, world) {
   instances(scene, new THREE.IcosahedronGeometry(1, 1),
     new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1, flatShading: true }), crowns);
   instances(scene, box, new THREE.MeshStandardMaterial({ color: '#b79165' }), benches);
-  instances(scene, box, new THREE.MeshStandardMaterial({ color: '#3f5262', metalness: 0.35 }), [...lamps, ...posts]);
+  instances(scene, box, new THREE.MeshStandardMaterial({ color: '#3f5262', metalness: 0.35 }), posts);
+  const lampPosts = instances(scene, box, new THREE.MeshStandardMaterial({ color: '#3f5262', metalness: 0.35 }), lamps);
+  lampPosts.name = 'Mâts des lampadaires';
   const signBoards = instances(scene, box, new THREE.MeshStandardMaterial({
     color: '#244451', roughness: 0.55, metalness: 0.3,
   }), boards);
   signBoards.userData.buildings = world.buildings;
   const lampMaterial = new THREE.MeshStandardMaterial({ color: '#fff1c2', emissive: '#ffd581', emissiveIntensity: 1 });
-  instances(scene, box, lampMaterial, lights);
-  const doors = [], caps = [], rooftop = [], shadows = [];
+  const lampHeads = instances(scene, box, lampMaterial, lights);
+  lampHeads.name = 'Têtes des lampadaires';
+  const doors = [], caps = [], shadows = [];
   for (const b of world.buildings) {
     doors.push({ x: b.x, y: 1.35, z: b.z + 2.65, w: 1.3, h: 1.8, d: 0.1 });
     caps.push({ x: b.x, y: 2.4, z: b.z + 3.2, w: 3.3, h: 0.12, d: 1.8 });
-    rooftop.push({ x: b.x + 1, y: b.height + 0.5, z: b.z - 0.6, w: 1.3, h: 0.7, d: 1.8 });
     shadows.push({ x: b.x + 1, y: 0.3, z: b.z + 1.4, w: 10, h: 0.01, d: 11 });
   }
-  instances(scene, box, new THREE.MeshStandardMaterial({ color: '#244b62', metalness: 0.25 }), doors);
+  const entryDoors = instances(scene, box, new THREE.MeshStandardMaterial({
+    color: '#174152', emissive: '#3ac9c0', emissiveIntensity: .18, metalness: .4,
+  }), doors);
+  entryDoors.name = 'Portes des bâtiments';
+  entryDoors.userData.buildings = world.buildings;
   instances(scene, box, new THREE.MeshStandardMaterial({ color: '#e0ceb1', roughness: 0.65 }), caps);
-  instances(scene, box, new THREE.MeshStandardMaterial({ color: '#92a0a3' }), rooftop);
   instances(scene, box, new THREE.MeshBasicMaterial({ color: '#203c38',
     transparent: true, opacity: 0.12, depthWrite: false }), shadows);
-  return { pickMeshes: [signBoards], setNight(night) { lampMaterial.emissiveIntensity = night ? 2 : 0.1; } };
+  return { pickMeshes: [signBoards, entryDoors], setNight(night) { lampMaterial.emissiveIntensity = night ? 2 : 0.1; } };
 }
 
 export function createDevelopers(scene, world, reducedMotion) {
@@ -205,15 +211,20 @@ export function createApiSigns(scene, world) {
           else lines[i] += character;
         }
       }
-      if (lines.length * font * 1.12 <= 244) break;
+      if (lines.length * font * 1.12 <= 190) break;
       font -= 2;
     } while (font > 12);
     ctx.fillStyle = '#173b4b';
     lines.forEach((line, i) => ctx.fillText(line.trim(), 32, 65 + font + i * font * 1.12));
     const state = b.api.status === 'PRODUCTION' ? 'Production' : b.api.status === 'CONSTRUCTION' ? 'Construction' : 'Dépréciée';
     ctx.fillStyle = '#49616a';
+    ctx.font = '500 25px system-ui, sans-serif';
+    let description = b.api.description ?? '';
+    while (ctx.measureText(description).width > 690 && description.length) description = description.slice(0, -1);
+    if (description !== b.api.description) description = `${description.slice(0, -1)}…`;
+    ctx.fillText(description, 32, 307);
     ctx.font = '500 27px system-ui, sans-serif';
-    ctx.fillText(`${state} · ${b.api.endpoints.length} endpoints · ${b.api.compliance.score} %`, 32, 356);
+    ctx.fillText(`${state} · ${b.api.endpoints.length} endpoints · ${complianceLabel(b.api.compliance?.score)}`, 32, 356);
     sign.texture.needsUpdate = true;
   }
   return {

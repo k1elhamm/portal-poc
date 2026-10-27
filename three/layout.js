@@ -1,7 +1,7 @@
 export const ENTITY_COLORS = ['#68b6bd', '#ad92d2', '#dfac69', '#7fb68e', '#819ed7',
   '#ca8da8', '#91b3a4', '#c0a3d9', '#c5bc79', '#78a6bd'];
 
-export const BUILDING_SPACING = { x: 20, z: 24 };
+export const BUILDING_SPACING = { x: 28, z: 34 };
 
 export function hash(text) {
   let h = 2166136261;
@@ -17,7 +17,7 @@ export function makeWorld(response) {
   const entities = new Map();
   for (const api of response.apis) {
     if (!api.id || ids.has(api.id) || !api.entity?.id || !api.pole?.id ||
-        !Array.isArray(api.endpoints) || !Number.isFinite(api.compliance?.score)) {
+        !Array.isArray(api.endpoints)) {
       throw new Error(`API invalide ou dupliquée : ${api.id ?? 'sans identifiant'}`);
     }
     ids.add(api.id);
@@ -70,7 +70,7 @@ export function makeWorld(response) {
           api, city, pole, index: buildings.length,
           x: pole.x + 6 + j % pole.columns * BUILDING_SPACING.x,
           z: pole.z + 9 + Math.floor(j / pole.columns) * BUILDING_SPACING.z,
-          height: 1.5 + api.endpoints.length * 1.25,
+          height: 4 + api.endpoints.length * 1.25,
         }));
     }
   });
@@ -81,5 +81,5 @@ export function makeWorld(response) {
       if (consumers.has(dep.apiId)) consumers.get(dep.apiId).push(b);
     }
   }
-  return { cities, buildings, byId, consumers, extent: stride * cols };
+  return { cities, buildings, byId, consumers, extent: stride * cols, generatedAt: response.generatedAt };
 }

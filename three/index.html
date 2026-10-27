@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1220">
+  <meta name="theme-color" content="#0a1423">
   <title>PORTAL — Monde 3D des API</title>
   <link rel="stylesheet" href="/style.css">
 </head>
@@ -11,35 +11,65 @@
   <div id="world"></div>
   <div id="labels"></div>
   <header>
-    <a class="brand" href="./"><span class="logo"></span>PORTAL <small>LAB / THREE.JS</small></a>
-    <div class="search"><label class="sr-only" for="search">Rechercher une API</label><input id="search" type="search" placeholder="Rechercher une API, une ville, un pôle…" autocomplete="off"><div id="results" hidden></div></div>
+    <a class="brand" href="./"><span class="logo"></span>PORTAL <small>API EXPLORER<br>EXPERIENCE LAB</small></a>
+    <div class="search"><label class="sr-only" for="search">Quelle capacité recherchez-vous ?</label><input id="search" type="search" placeholder="Quelle capacité cherchez-vous ? IBAN, identité, paiement…" autocomplete="off" aria-controls="results" aria-expanded="false"><kbd>⌘ K</kbd><div id="results" aria-label="Résultats du catalogue" hidden></div></div>
     <button id="theme" aria-label="Passer en mode jour">☀ Jour</button>
+    <button id="nav-toggle" aria-expanded="true" aria-controls="navigation">Explorer</button>
   </header>
-  <nav class="navigator" aria-label="Explorer le catalogue">
-    <span class="eyebrow">LE CAMPUS DES DÉVELOPPEURS</span>
-    <h1>Bienvenue dans<br>la cité des API.</h1>
-    <p>25 villes · 153 quartiers · 1 500 bâtiments.<br>Chaque bâtiment est une API, chaque étage un endpoint.</p>
+  <div id="compliance-key" aria-label="Couleurs de conformité"><span>Conformité</span><span style="--key:#56c98a">100 %</span><span style="--key:#ed8a32">60–99 %</span><span style="--key:#d94e4e">&lt; 60 %</span><span style="--key:#8492a2">Inconnue</span></div>
+  <nav class="navigator" id="navigation" aria-label="Explorer le catalogue">
+    <span class="eyebrow">01 / EXPLORATION SPATIALE</span>
+    <h1>Des capacités.<br>Un monde à explorer.</h1>
+    <p>25 villes, 153 quartiers, 1 500 API.<br>Entrez dans une ville ou cherchez une capacité.</p>
+    <div class="capabilities" aria-label="Suggestions de capacités"><button data-query="paiement">Paiements ↗</button><button data-query="authentification">Identité ↗</button><button data-query="document">Documents ↗</button><button data-query="notification">Notifications ↗</button></div>
+    <details open class="filters"><summary>Affiner le catalogue <span id="filter-count"></span></summary>
+      <label for="domain-filter">Capacité métier</label><select id="domain-filter"><option value="">Tous les domaines</option></select>
+      <label for="status-filter">Cycle de vie</label><select id="status-filter"><option value="">Tous les statuts</option><option value="PRODUCTION">Production</option><option value="CONSTRUCTION">Construction</option><option value="DEPRECATED">Dépréciée</option></select>
+      <label for="city-filter">Entité propriétaire</label><select id="city-filter"><option value="">Toutes les entités</option></select>
+      <div class="nav-actions"><button id="browse">Liste des API</button><button id="reset-filters">Réinitialiser</button></div>
+    </details>
     <label for="entity">Aller dans une ville</label>
     <select id="entity"><option value="">Vue du monde</option></select>
     <label for="pole">Explorer un quartier</label>
     <select id="pole" disabled><option value="">Choisir un quartier</option></select>
     <div class="nav-actions"><button id="overview">Vue du monde</button><button id="back" disabled>← Retour</button></div>
-    <div class="divider"></div>
-    <label class="eyebrow">NAVIGATION</label>
+    <details class="controls"><summary>Commandes & exploration libre</summary>
     <button id="fly">Entrer en vol libre</button>
     <p class="help">Souris gauche : tourner à 360°<br>Droite : déplacer · Molette : avancer<br>Double-clic : rejoindre un point</p>
     <p class="help">Vol libre : souris pour regarder · WASD / ZQSD pour avancer · E / C pour monter / descendre · Maj pour accélérer · Échap pour quitter.</p>
     <button id="relations" aria-pressed="false">Afficher les relations</button>
-    <button id="people" aria-pressed="true">Mettre les promenades en pause</button>
-    <p class="hint">Sélectionne une API pour voir ses dépendances et ses consommateurs.</p>
+    <button id="people" aria-pressed="true">Mettre les animations en pause</button>
+    </details>
+    <p class="hint">Un seul bâtiment révèle sa façade technique. L’interphone donne accès à l’équipe et aux coordonnées, sans quitter la cité.<br>Vert : 100 % · Orange : 60–99 % · Rouge : moins de 60 % · Gris : inconnu. Conformité ≠ disponibilité.</p>
   </nav>
+  <section id="relation-tools" hidden aria-label="Analyse des dépendances"><strong id="relation-title">Relations</strong><span id="relation-count"></span><button id="fit-relations">Ouvrir la vue des relations</button></section>
+  <dialog id="relations-view" aria-labelledby="relations-heading">
+    <div class="relations-header"><div><span class="eyebrow">QUI APPELLE QUI ?</span><h2 id="relations-heading"></h2><p>Consommateurs → API sélectionnée → fournisseurs. Choisissez un nom pour isoler une liaison.</p></div><button id="relations-close" autofocus>← Revenir à la cité</button></div>
+    <div id="relation-board">
+      <svg id="relation-wire" aria-hidden="true"></svg>
+      <section class="relation-column"><h3>Consommateurs <span id="relation-consumers-count"></span></h3><p>Ces API appellent l’API centrale →</p><div id="relation-consumers"></div><nav id="relation-consumers-pages" aria-label="Pages des consommateurs"></nav></section>
+      <section class="relation-column relation-central"><div id="relation-center"><span class="eyebrow">API SÉLECTIONNÉE</span><strong id="relation-root-name"></strong><p id="relation-root-place"></p><small id="relation-root-id"></small></div></section>
+      <section class="relation-column"><h3>Fournisseurs <span id="relation-suppliers-count"></span></h3><p>→ L’API centrale appelle ces API</p><div id="relation-suppliers"></div><nav id="relation-suppliers-pages" aria-label="Pages des fournisseurs"></nav></section>
+    </div>
+    <div class="relation-reading"><p id="relation-sentence" role="status"></p><p id="relation-evidence"></p><div class="nav-actions"><button id="relation-explore" disabled>Voir cette API dans la cité</button><button id="relation-recenter" disabled>Prendre cette API comme centre</button></div></div>
+  </dialog>
+  <section id="building-focus" hidden aria-label="Bâtiment en cours">
+    <nav id="spatial-path" aria-label="Position dans la cité"><button id="path-world">Cité</button><span>›</span><button id="path-city"></button><span>›</span><button id="path-pole"></button></nav>
+    <div><span class="eyebrow">VOUS EXPLOREZ</span><strong id="focus-name"></strong><small id="focus-summary"></small><p id="focus-description"></p></div>
+    <button id="focus-frame">Cadrer la façade</button><button id="focus-contact">Interphone · Équipe & contact</button><button id="focus-relations">Qui appelle qui ?</button><button id="focus-details">Fiche standard</button>
+    <label for="focus-endpoint">Explorer un endpoint</label><select id="focus-endpoint"><option value="">Choisir un étage…</option></select>
+    <div class="nav-actions"><button id="building-previous">← API précédente</button><button id="building-next">API suivante →</button></div>
+    <button id="return-quarter">← Revenir au quartier</button><button id="reopen-results" hidden>Revoir les résultats</button>
+  </section>
+  <section id="endpoint-card" hidden aria-label="Endpoint sélectionné"><div class="endpoint-heading"><span class="eyebrow">FAÇADE / ENDPOINT</span><button id="endpoint-close" aria-label="Revoir tout le bâtiment">×</button><h2 id="endpoint-title"></h2></div><code id="endpoint-path"></code><p id="endpoint-parameters"></p><div class="nav-actions"><button id="endpoint-copy">Copier le chemin</button><button id="endpoint-simulate">Simuler localement</button></div><p id="endpoint-feedback" role="status"></p><div id="endpoint-simulator"></div><button id="endpoint-building">← Revoir tout le bâtiment</button></section>
+  <section id="contact-card" hidden aria-label="Interphone et coordonnées de l’équipe"><button id="close-contact" aria-label="Fermer le contact et retrouver la façade">×</button><span class="eyebrow">INTERPHONE / CONTACT</span><strong id="contact-team"></strong><dl id="contact-list"></dl><button id="copy-contact">Copier les coordonnées</button><p id="contact-feedback" role="status">Aucun appel téléphonique ne sera lancé.</p></section>
   <main aria-label="Cité interactive des API">
     <p id="loading" role="status">Construction du monde…</p>
     <div id="crosshair" hidden>+</div>
-    <div id="hover" hidden><strong></strong><span></span><button data-action="overview">Ouvrir la fiche</button><button data-action="consumers" aria-label="Consommateurs">👤</button><button data-action="contact" aria-label="Contact">📞</button><button data-action="governance" aria-label="Gouvernance">🛡</button></div>
-    <aside id="panel" hidden aria-label="Fiche de l’API"><button id="close" aria-label="Fermer la fiche">×</button><p id="path" class="eyebrow"></p><h2 id="api-name"></h2><div id="badges"></div><nav id="tabs" aria-label="Sections de la fiche"></nav><div id="content"></div><button id="approach">Rejoindre ce bâtiment</button></aside>
+    <div id="hover" hidden><div class="eyebrow">API / APERÇU</div><strong></strong><p class="hover-description"></p><span></span><p class="hover-access"></p><button data-action="overview">Ouvrir la fiche</button><button data-action="technical">Endpoints</button><button data-action="relationships">Relations</button></div>
+    <aside id="panel" hidden aria-label="Fiche de l’API"><div class="panel-tools"><span class="eyebrow">API</span><button id="panel-full" aria-label="Agrandir la fiche" aria-pressed="false">⤢</button><button id="close" aria-label="Fermer la fiche">×</button></div><p id="path" class="eyebrow"></p><h2 id="api-name"></h2><div id="badges"></div><nav id="tabs" aria-label="Sections de la fiche"></nav><div id="content"></div><button id="approach">Rejoindre ce bâtiment</button></aside>
   </main>
-  <footer><span id="state">Initialisation</span><span id="stats"></span><span class="legend"><i></i> Production <i></i> Construction <i></i> Dépréciée · Or = conformité 100 %</span></footer>
+  <footer><span id="state">Initialisation</span><span id="stats"></span><span class="legend">Hauteur = endpoints · Panneau = API · Anneau = lecture active</span></footer>
   <p class="sr-only" id="announcement" aria-live="polite"></p>
   <script type="module" src="/main.js"></script>
 </body>

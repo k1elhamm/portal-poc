@@ -47,17 +47,17 @@ test('25 villes, 153 pôles et exactement 1500 bâtiments issus de getAPIs', () 
   assert.equal(world.byId.size, 1500);
 });
 
-test('les bâtiments de 5,2 unités réservent 14,8 unités latérales et 18,8 entre rangées', () => {
-  assert.equal(BUILDING_SPACING.x - 5.2, 14.8);
-  assert.equal(BUILDING_SPACING.z - 5.2, 18.8);
+test('les bâtiments de 5,2 unités réservent 22,8 unités latérales et 28,8 entre rangées', () => {
+  assert.equal(BUILDING_SPACING.x - 5.2, 22.8);
+  assert.equal(BUILDING_SPACING.z - 5.2, 28.8);
   for (const city of world.cities) {
     for (const pole of city.poles.values()) {
       const buildings = world.buildings.filter(b => b.pole === pole);
       for (let i = 0; i < buildings.length; i++) {
         const a = buildings[i];
-        assert.equal(a.height, 1.5 + a.api.endpoints.length * 1.25);
+        assert.equal(a.height, 4 + a.api.endpoints.length * 1.25);
         for (const b of buildings.slice(i + 1)) {
-          assert.ok(Math.abs(a.x - b.x) >= 20 || Math.abs(a.z - b.z) >= 24);
+          assert.ok(Math.abs(a.x - b.x) >= BUILDING_SPACING.x || Math.abs(a.z - b.z) >= BUILDING_SPACING.z);
         }
         assert.ok(a.x - 2.6 >= pole.x - 3);
         assert.ok(a.x + 2.6 <= pole.x - 3 + pole.width);
@@ -86,4 +86,11 @@ test('les consommateurs sont les relations inverses du catalogue', () => {
 test('les entrées vides et les identifiants dupliqués sont refusés explicitement', () => {
   assert.throws(() => makeWorld({ apis: [] }), /vide ou invalide/);
   assert.throws(() => makeWorld({ apis: [source.apis[0], source.apis[0]] }), /dupliquée/);
+});
+
+test('un score de conformité absent ne bloque pas la cité ni ne devient zéro', () => {
+  const api = { ...source.apis[0], compliance: undefined };
+  const result = makeWorld({ apis: [api] });
+  assert.equal(result.buildings.length, 1);
+  assert.equal(result.buildings[0].api.compliance, undefined);
 });

@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
-import { makeWorld, hash } from './layout.js';
+import { makeWorld } from './layout.js';
 import { buildStreets, createDevelopers, createApiSigns, apiSignPosition } from './city-life.js';
+import { MODES, DOMAINS, matchesApi, normalize, finite, impactOf, readiness, contactEntries } from './catalog.js';
+import { createCitySignals } from './city-signals.js';
+import { createCityArchitecture } from './city-architecture.js';
+import { buildingKind, complianceColor, complianceLabel, floorProfile } from './building-profile.js';
+import { createRelationsView } from './relations-view.js';
 
 const $ = (id) => document.getElementById(id);
 const statusName = { PRODUCTION: 'Production', CONSTRUCTION: 'Construction', DEPRECATED: 'Dépréciée' };
@@ -50,18 +55,23 @@ const pointer = new THREE.Vector2();
 const dummy = new THREE.Object3D();
 const pickMeshes = [];
 const facadeMaterials = [];
+const visualMeshes = [];
 const labels = [];
 const cityLabels = [];
 const history = [];
 const keys = new Set();
 let world, selected = null, hovered = null, currentCity = null;
-let transition = null, dark = false, disposed = false, frame = 0, hoverTimer;
+let transition = null, dark = true, disposed = false, frame = 0, hoverTimer;
 let contextLost = false, ready = false;
-let streets, developers, apiSigns;
+let streets, developers, apiSigns, signals, architecture, relationsView;
+let contactBuilding = null, contactView = null;
+let endpointFocus = null, spatialBuilding = null;
+let mode = 'discovery', activeTab = 'overview', resultLimit = 24;
+let matches = new Set(), related = new Map();
+let filters = { query: '', domain: '', status: '', city: '' };
+let simulation = null;
 let animatePeople = true;
 let pointerDown = null, moved = false, relationsOn = false;
-const relations = new THREE.Group();
-scene.add(relations);
 const selection = new THREE.Box3Helper(new THREE.Box3(), '#ffd365');
 selection.visible = false;
 scene.add(selection);
@@ -112,29 +122,25 @@ function facadeTexture() {
 const windows = facadeTexture();
 const unitFloor = boxGeometry(5.2, 1.25, 5.2);
 const unitRoof = boxGeometry(5.7, 0.35, 5.7);
-const unitStatus = new THREE.SphereGeometry(0.38, 8, 6);
 
 function buildBuildings() {
   const groups = new Map();
   for (const b of world.buildings) {
-    const score = b.api.compliance.score;
-    const kind = score >= 100 ? 'lux' : score >= 80 ? 'good' : score >= 60 ? 'fair' : 'poor';
-    const key = `${b.city.id}:${kind}:${b.api.status}`;
+    const score = b.api.compliance?.score;
+    const kind = buildingKind(score);
+    const key = kind;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(b);
   }
-  const statusGroups = { PRODUCTION: [], CONSTRUCTION: [], DEPRECATED: [] };
   for (const buildings of groups.values()) {
     const first = buildings[0];
-    const score = first.api.compliance.score;
-    const color = new THREE.Color(first.city.color).lerp(new THREE.Color('#f7f1e2'), 0.55);
-    if (first.api.status === 'DEPRECATED') color.lerp(new THREE.Color('#777b83'), 0.7);
-    if (score < 60) color.lerp(new THREE.Color('#88745e'), 0.5);
-    const unlit = new THREE.MeshStandardMaterial({ color, map: windows, roughness: score >= 100 ? 0.28 : 0.8,
-      metalness: score >= 100 ? 0.3 : 0.06, emissive: '#ffbc58', emissiveMap: windows, emissiveIntensity: 0.18 });
+    const score = first.api.compliance?.score;
+    const color = new THREE.Color(complianceColor(score));
+    const unlit = new THREE.MeshStandardMaterial({ color, map: windows, roughness: 0.7,
+      metalness: 0.08, emissive: color, emissiveIntensity: 0.08 });
     facadeMaterials.push(unlit);
     const roofMaterial = new THREE.MeshStandardMaterial({
-      color: score >= 100 ? '#edc265' : color.clone().multiplyScalar(0.8), metalness: 0.25, roughness: 0.6,
+      color, metalness: 0.08, roughness: 0.6,
     });
     const floorCount = buildings.reduce((sum, b) => sum + b.api.endpoints.length + 1, 0);
     const floors = new THREE.InstancedMesh(unitFloor, unlit, floorCount);
@@ -144,15 +150,13 @@ function buildBuildings() {
     let index = 0;
     buildings.forEach((b, ri) => {
       const n = b.api.endpoints.length;
-      const ratio = b.api.status === 'DEPRECATED' ? 0.12 : b.api.status === 'CONSTRUCTION' ? 0.5 :
-        score >= 100 ? 1 : score >= 80 ? 0.75 : score >= 60 ? 0.45 : 0.18;
       for (let f = 0; f <= n; f++) {
-        dummy.position.set(b.x, 0.75 + f * 1.25, b.z);
-        dummy.scale.set(1, f === n ? 0.2 : 1, 1);
+        const profile = floorProfile();
+        dummy.position.set(b.x + profile.offset, f === 0 ? 2.15 : 3.25 + f * 1.25, b.z);
+        dummy.scale.set(profile.width / 5.2, f === 0 ? 2.8 : 1, profile.depth / 5.2);
         dummy.updateMatrix();
         floors.setMatrixAt(index, dummy.matrix);
-        const lit = hash(`${b.api.id}:${f}`) / 2 ** 32 < ratio;
-        floors.setColorAt(index, new THREE.Color(lit ? '#ffffff' : '#b7c5ca'));
+        floors.setColorAt(index, new THREE.Color('#ffffff'));
         floors.userData.buildings.push(b);
         index++;
       }
@@ -160,47 +164,15 @@ function buildBuildings() {
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
       roofs.setMatrixAt(ri, dummy.matrix);
-      statusGroups[b.api.status].push(b);
+      dummy.rotation.y = 0;
     });
     floors.computeBoundingSphere();
     roofs.computeBoundingSphere();
+    floors.userData.baseColors = floors.instanceColor.array.slice();
+    roofs.userData.baseColors = new Float32Array(buildings.length * 3).fill(1);
+    visualMeshes.push(floors, roofs);
     scene.add(floors, roofs);
     pickMeshes.push(floors, roofs);
-  }
-  for (const [status, buildings] of Object.entries(statusGroups)) {
-    const color = { PRODUCTION: '#5ce2a0', CONSTRUCTION: '#ffbe4d', DEPRECATED: '#9aa5b7' }[status];
-    const mesh = new THREE.InstancedMesh(unitStatus,
-      new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.65 }), buildings.length);
-    buildings.forEach((b, i) => {
-      dummy.position.set(b.x, b.height + 1.3, b.z);
-      dummy.updateMatrix();
-      mesh.setMatrixAt(i, dummy.matrix);
-    });
-    mesh.userData.buildings = buildings;
-    mesh.computeBoundingSphere();
-    scene.add(mesh);
-    pickMeshes.push(mesh);
-  }
-  const cranes = [];
-  const cracks = [];
-  for (const b of world.buildings) {
-    if (b.api.status === 'CONSTRUCTION') {
-      const y = b.height;
-      cranes.push(b.x + 2, 0, b.z, b.x + 2, y + 4, b.z,
-        b.x - 3, y + 4, b.z, b.x + 4, y + 4, b.z,
-        b.x - 2, y + 4, b.z, b.x - 2, y + 1, b.z);
-    }
-    if (b.api.compliance.score < 60) {
-      for (let f = 1; f < 4; f++) {
-        cracks.push(b.x - 0.7 + (f % 2) * 0.5, b.height * f / 5, b.z + 2.61,
-          b.x - 0.7 + ((f + 1) % 2) * 0.5, b.height * (f + 1) / 5, b.z + 2.61);
-      }
-    }
-  }
-  for (const [vertices, color] of [[cranes, '#ecc166'], [cracks, '#1c2432']]) {
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    scene.add(new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color })));
   }
 }
 
@@ -286,7 +258,167 @@ function approachApi(building) {
   animateCamera(target.clone().add(new THREE.Vector3(-6, 5.5, 12)), target);
 }
 
+function inspectBuilding(b) {
+  clearEndpoint();
+  closeContact();
+  if (selected !== b) selectApi(b);
+  spatialBuilding = b;
+  saveView();
+  const target = new THREE.Vector3(b.x, b.height / 2 + 1, b.z + 1);
+  const distance = Math.max(innerWidth <= 760 ? 32 : 24, b.height * 1.7);
+  animateCamera(target.clone().add(new THREE.Vector3(-2, distance * .1, distance)), target);
+  $('panel').hidden = true;
+  document.body.classList.remove('panel-open', 'panel-full');
+  $('panel-full').setAttribute('aria-pressed', 'false');
+  $('panel-full').setAttribute('aria-label', 'Agrandir la fiche');
+  document.body.classList.add('nav-collapsed');
+  $('nav-toggle').setAttribute('aria-expanded', 'false');
+  $('state').textContent = `${b.api.name} · Façade technique · Interphone pour l’équipe et les contacts`;
+  renderer.domElement.focus();
+  writeLocation();
+}
+
+function clearEndpoint() {
+  clearTimeout(simulation);
+  endpointFocus = null;
+  $('endpoint-card').hidden = true;
+  document.body.classList.remove('endpoint-open');
+  $('endpoint-simulator').replaceChildren();
+  architecture?.highlightEndpoint(null);
+}
+
+function inspectEndpoint(b, index) {
+  if (!Number.isInteger(index) || !b.api.endpoints[index]) {
+    $('announcement').textContent = 'Cet endpoint est absent du catalogue.';
+    return;
+  }
+  if (selected !== b || !$('panel').hidden) inspectBuilding(b);
+  closeContact();
+  clearEndpoint();
+  $('simulator')?.replaceChildren();
+  spatialBuilding = b;
+  endpointFocus = { building: b, index };
+  const ep = b.api.endpoints[index];
+  $('endpoint-title').textContent = `${ep.method} · ${ep.summary}`;
+  $('endpoint-path').textContent = ep.path;
+  const parameters = [...ep.path.matchAll(/\{([^}]+)\}/g)].map(match => match[1]);
+  $('endpoint-parameters').textContent = parameters.length ?
+    `Paramètres de chemin : ${parameters.join(', ')}. Types et contraintes non fournis.` :
+    'Aucun paramètre de chemin. Paramètres de requête et schémas non fournis.';
+  $('endpoint-feedback').textContent = 'Données fictives · aucun appel réseau.';
+  $('endpoint-card').hidden = false;
+  document.body.classList.add('endpoint-open');
+  $('endpoint-card').scrollTop = 0;
+  $('endpoint-card').dataset.index = String(index);
+  $('focus-endpoint').value = String(index);
+  architecture.highlightEndpoint(b, index);
+  const mobile = innerWidth <= 760;
+  const distance = mobile ? Math.max(10, 6.6 / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect)) : 8;
+  const target = new THREE.Vector3(b.x, 4.5 + index * 1.25 - (mobile ? distance * .2 : 0), b.z + 2.7);
+  animateCamera(target.clone().add(new THREE.Vector3(0, .1, distance)), target);
+  $('endpoint-copy').focus();
+  $('announcement').textContent = `Endpoint ${ep.method} ${ep.summary}. Échap pour revoir le bâtiment.`;
+  writeLocation();
+}
+
+function clearBuildingFocus() {
+  clearEndpoint();
+  closeContact();
+  clearHover();
+  spatialBuilding = null;
+  selected = null;
+  selection.visible = false;
+  $('panel').hidden = true;
+  document.body.classList.remove('panel-open', 'panel-full');
+  drawRelations();
+}
+
+function returnToQuarter() {
+  const b = endpointFocus?.building ?? spatialBuilding ?? architecture.activeBuilding ?? selected;
+  if (!b) return;
+  clearBuildingFocus();
+  currentCity = b.city;
+  $('entity').value = b.city.id;
+  updatePoleOptions(b.city);
+  $('pole').value = b.pole.id;
+  travelTo(new THREE.Vector3(b.pole.x + b.pole.width / 2 - 3, 2, b.pole.z + b.pole.depth / 2 - 2),
+    Math.max(b.pole.width, b.pole.depth) * 1.1);
+  $('state').textContent = `${b.city.name} › ${b.pole.name} · Vue du quartier`;
+  renderer.domElement.focus();
+  writeLocation();
+}
+
+function adjacentBuilding(step) {
+  const b = spatialBuilding ?? architecture.activeBuilding;
+  if (!b) return;
+  const neighbors = world.buildings.filter(item => item.pole === b.pole && matches.has(item.api.id));
+  const index = neighbors.indexOf(b);
+  if (index < 0 || neighbors.length < 2) {
+    $('announcement').textContent = 'Aucune autre API ne correspond aux filtres dans ce quartier.';
+    return;
+  }
+  inspectBuilding(neighbors[(index + step + neighbors.length) % neighbors.length]);
+}
+
+function showContact(b) {
+  if (!b) return;
+  clearEndpoint();
+  clearHover();
+  if (!contactBuilding) contactView = { position: camera.position.clone(), target: orbit.target.clone() };
+  contactBuilding = b;
+  $('contact-team').textContent = b.api.contact?.team || 'Équipe non renseignée';
+  $('contact-list').replaceChildren();
+  for (const [label, value] of contactEntries(b.api)) {
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = label; dd.textContent = value;
+    $('contact-list').append(dt, dd);
+  }
+  $('contact-feedback').textContent = 'Données fictives · aucun appel téléphonique ne sera lancé.';
+  $('contact-card').hidden = false;
+  $('contact-card').dataset.api = b.api.id;
+  $('panel').hidden = true;
+  document.body.classList.remove('panel-open');
+  const target = new THREE.Vector3(b.x - 3.9, 2.2, b.z + 3.85);
+  animateCamera(target.clone().add(new THREE.Vector3(0, .2, innerWidth <= 760 ? 6.5 : 5.8)), target);
+  $('close-contact').focus();
+  $('announcement').textContent = `Interphone de ${b.api.name}. Vous restez dans la cité.`;
+}
+
+function closeContact(restore = false) {
+  if (!contactBuilding) return;
+  if (restore && contactView) animateCamera(contactView.position, contactView.target);
+  contactBuilding = null;
+  contactView = null;
+  $('contact-card').hidden = true;
+}
+
+function focusControls() {
+  const b = architecture.activeBuilding;
+  if (endpointFocus && (fly.isLocked || !transition && endpointFocus.building !== b)) {
+    clearEndpoint();
+    writeLocation();
+  }
+  if (endpointFocus) architecture.highlightEndpoint(endpointFocus.building, endpointFocus.index);
+  $('building-focus').hidden = !b || !$('panel').hidden || fly.isLocked;
+  if (contactBuilding && (b !== contactBuilding || !$('panel').hidden || fly.isLocked)) closeContact();
+  if (!b) return;
+  $('focus-name').textContent = b.api.name;
+  $('focus-summary').textContent = `${b.api.endpoints.length} endpoints · Conformité : ${complianceLabel(b.api.compliance?.score)} · ${b.api.version}`;
+  $('focus-description').textContent = b.api.description || 'Description non renseignée.';
+  $('path-city').textContent = b.city.name;
+  $('path-pole').textContent = b.pole.name;
+  $('reopen-results').hidden = !filters.query;
+  if ($('focus-endpoint').dataset.api !== b.api.id) {
+    $('focus-endpoint').replaceChildren(new Option('Choisir un étage…', ''),
+      ...b.api.endpoints.map((ep, index) => new Option(`${ep.method} · ${ep.summary}`, String(index))));
+    $('focus-endpoint').dataset.api = b.api.id;
+  }
+  $('focus-endpoint').value = endpointFocus?.building === b ? String(endpointFocus.index) : '';
+}
+
 function focusCity(city) {
+  clearBuildingFocus();
   saveView();
   currentCity = city;
   $('entity').value = city.id;
@@ -295,6 +427,7 @@ function focusCity(city) {
   travelTo(new THREE.Vector3(pole.x + pole.width / 2 - 3, 2, pole.z + pole.depth / 2 - 2),
     Math.max(pole.width, pole.depth) * 1.35, false);
   $('state').textContent = `${city.name} · ${city.apis.length} API · ${city.poles.size} pôles`;
+  writeLocation();
 }
 
 function updatePoleOptions(city) {
@@ -306,6 +439,7 @@ function updatePoleOptions(city) {
 }
 
 function overview(remember = true) {
+  clearBuildingFocus();
   if (remember) saveView();
   currentCity = null;
   $('entity').value = '';
@@ -313,6 +447,7 @@ function overview(remember = true) {
   const e = world.extent;
   animateCamera(new THREE.Vector3(e * 0.54, e * 0.8, e * 0.76), new THREE.Vector3());
   $('state').textContent = 'Vue du monde · 25 villes · Rotation libre à 360°';
+  writeLocation();
 }
 
 function setBounds(helper, b) {
@@ -321,11 +456,15 @@ function setBounds(helper, b) {
   helper.visible = true;
 }
 
-function pick(event) {
+function pickHit(event) {
   pointer.set(event.clientX / innerWidth * 2 - 1, 1 - event.clientY / innerHeight * 2);
   raycaster.setFromCamera(pointer, camera);
-  const hit = raycaster.intersectObjects(pickMeshes, false)[0];
-  return hit ? hit.object.userData.buildings[hit.instanceId] : null;
+  return raycaster.intersectObjects([...pickMeshes, ...architecture.pickMeshes], false)[0];
+}
+
+function pick(event) {
+  const hit = pickHit(event);
+  return hit ? hit.object.userData.building ?? hit.object.userData.buildings[hit.instanceId] : null;
 }
 
 function clearHover() {
@@ -341,24 +480,147 @@ function showHover(b, event) {
   setBounds(hoverOutline, b);
   const bar = $('hover');
   bar.querySelector('strong').textContent = b.api.name;
-  bar.querySelector('span').textContent = `${statusName[b.api.status]} · ${b.api.endpoints.length} endpoints · ${b.api.compliance.score} %`;
-  bar.style.left = `${Math.max(8, Math.min(innerWidth - 320, event.clientX + 12))}px`;
-  bar.style.top = `${Math.max(80, Math.min(innerHeight - 120, event.clientY - 85))}px`;
+  bar.querySelector('span').textContent = `${statusName[b.api.status]} · ${b.api.version} · Conformité : ${complianceLabel(b.api.compliance?.score)}`;
+  bar.querySelector('.hover-description').textContent = b.api.description;
+  bar.querySelector('.hover-access').textContent = `${readiness(b.api).access} · Essais simulés disponibles`;
+  bar.style.left = `${Math.max(8, Math.min(innerWidth - 330, event.clientX + 12))}px`;
+  bar.style.top = `${Math.max(135, Math.min(innerHeight - 270, event.clientY - 180))}px`;
   bar.hidden = false;
 }
 
 const tabs = { overview: 'Présentation', functional: 'Fonctionnel', technical: 'Endpoints',
   consumers: 'Consommateurs', contact: 'Contact', governance: 'Gouvernance' };
 
+function writeLocation() {
+  if (!world) return;
+  const params = new URLSearchParams({ mode });
+  if (selected) { params.set('api', selected.api.id); params.set('tab', activeTab); }
+  else if (currentCity) params.set('city', currentCity.id);
+  if (endpointFocus) {
+    params.set('api', endpointFocus.building.api.id);
+    params.set('endpoint', String(endpointFocus.index));
+    params.set('view', 'facade');
+  } else if (spatialBuilding && selected === spatialBuilding && $('panel').hidden) params.set('view', 'facade');
+  window.history.replaceState(null, '', `#${params}`);
+}
+
+function restoreLocation() {
+  closeContact();
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (params.has('mode') && !MODES[params.get('mode')]) {
+    $('announcement').textContent = 'Mode du lien inconnu : affichage Découverte.';
+  }
+  mode = MODES[params.get('mode')] ? params.get('mode') : 'discovery';
+  const building = world.byId.get(params.get('api'));
+  const city = world.cities.find(c => c.id === params.get('city'));
+  if (building) {
+    selectApi(building, tabs[params.get('tab')] ? params.get('tab') : 'overview', true);
+    if (params.get('view') === 'facade' || params.has('endpoint')) inspectBuilding(building);
+    if (params.has('endpoint')) {
+      const value = params.get('endpoint');
+      if (/^\d+$/.test(value) && building.api.endpoints[Number(value)]) inspectEndpoint(building, Number(value));
+      else $('announcement').textContent = 'Endpoint du lien absent : affichage du bâtiment.';
+    }
+  }
+  else if (city) focusCity(city);
+  else {
+    overview(false);
+    if (params.has('api') || params.has('city')) $('announcement').textContent = 'La destination de ce lien est absente du catalogue.';
+  }
+  setMode(mode);
+}
+
+function setMode(next) {
+  mode = next;
+  relationsOn = mode === 'dependencies';
+  $('relations').setAttribute('aria-pressed', String(relationsOn));
+  $('relation-tools').hidden = !relationsOn;
+  drawRelations();
+  writeLocation();
+}
+
+function updateSignals() {
+  signals?.update({ mode, matches, selected, related });
+  architecture?.update({ mode, matches, selected });
+  const color = new THREE.Color();
+  for (const mesh of visualMeshes) {
+    const base = mesh.userData.baseColors;
+    mesh.userData.buildings.forEach((b, i) => {
+      color.fromArray(base, i * 3);
+      if (b !== selected && (!matches.has(b.api.id) || mode === 'dependencies' && selected && !related.has(b.api.id))) color.multiplyScalar(.26);
+      mesh.setColorAt(i, color);
+    });
+    mesh.instanceColor.needsUpdate = true;
+  }
+}
+
+function refreshMatches(showResults = false) {
+  matches = new Set(world.buildings.filter(b => matchesApi(b.api, filters)).map(b => b.api.id));
+  $('filter-count').textContent = `· ${matches.size} / ${world.buildings.length}`;
+  $('announcement').textContent = `${matches.size} API correspondent aux filtres.`;
+  updateSignals();
+  if (showResults) { resultLimit = 24; renderResults(); }
+}
+
+function renderResults() {
+  const all = world.buildings.filter(b => matches.has(b.api.id));
+  const exact = normalize(filters.query).trim();
+  all.sort((a, b) => Number(normalize(b.api.id) === exact) - Number(normalize(a.api.id) === exact) ||
+    Number(normalize(b.api.name) === exact) - Number(normalize(a.api.name) === exact) || a.api.name.localeCompare(b.api.name, 'fr'));
+  $('results').hidden = false;
+  $('search').setAttribute('aria-expanded', 'true');
+  $('results').innerHTML = `<div class="results-head"><span>${all.length} API · catalogue fictif</span><button type="button" id="dismiss-results" aria-label="Fermer les résultats">×</button></div>`;
+  $('dismiss-results').onclick = hideResults;
+  if (!all.length) $('results').insertAdjacentHTML('beforeend', '<p>Aucune API ne correspond. Essayez une autre capacité ou réinitialisez les filtres.</p>');
+  for (const b of all.slice(0, resultLimit)) {
+    const button = document.createElement('button');
+    button.innerHTML = `<strong>${escape(b.api.name)}</strong><small class="result-description">${escape(b.api.description)}</small><small>${escape(b.city.name)} / ${escape(b.pole.name)}</small><small class="result-tags">${escape(statusName[b.api.status])} · ${escape(readiness(b.api).access)}</small>`;
+    button.onclick = () => { hideResults(); selectApi(b, 'overview', true); };
+    $('results').append(button);
+    const guide = document.createElement('button');
+    guide.className = 'result-guide';
+    guide.dataset.api = b.api.id;
+    guide.textContent = `Me guider vers ${b.api.name} →`;
+    guide.onclick = () => { hideResults(); inspectBuilding(b); };
+    $('results').append(guide);
+  }
+  if (all.length > resultLimit) {
+    const button = document.createElement('button');
+    button.textContent = `Afficher les suivantes (${all.length - resultLimit} restantes)`;
+    button.onclick = () => { resultLimit += 24; renderResults(); };
+    $('results').append(button);
+  }
+}
+
+function hideResults() {
+  $('results').hidden = true;
+  $('search').setAttribute('aria-expanded', 'false');
+}
+
 function selectApi(b, tab = 'overview', navigate = false) {
+  const openRelations = tab === 'relationships';
+  if (!tabs[tab]) tab = 'overview';
+  clearEndpoint();
+  spatialBuilding = null;
+  closeContact();
+  clearTimeout(simulation);
   selected = b;
+  currentCity = b.city;
+  $('entity').value = b.city.id;
+  updatePoleOptions(b.city);
+  $('pole').value = b.pole.id;
   clearHover();
   setBounds(selection, b);
   $('panel').hidden = false;
+  document.body.classList.add('panel-open');
+  if (innerWidth <= 760) {
+    document.body.classList.add('nav-collapsed');
+    $('nav-toggle').setAttribute('aria-expanded', 'false');
+  }
   $('api-name').textContent = b.api.name;
   $('path').textContent = `${b.city.name} / ${b.pole.name}`;
-  $('badges').innerHTML = [statusName[b.api.status], b.api.version, `${b.api.compliance.score} % conformité`,
-    `${b.api.endpoints.length} endpoints`].map(v => `<span>${escape(v)}</span>`).join('');
+  $('badges').innerHTML = `<span class="${b.api.status === 'DEPRECATED' ? 'deprecated' : ''}">${escape(statusName[b.api.status])}</span>` +
+    [b.api.version, `${b.api.endpoints.length} endpoints`, 'Données fictives'].map(v => `<span>${escape(v)}</span>`).join('');
   $('tabs').replaceChildren();
   for (const [id, label] of Object.entries(tabs)) {
     const button = document.createElement('button');
@@ -370,20 +632,43 @@ function selectApi(b, tab = 'overview', navigate = false) {
   showTab(tab);
   drawRelations();
   $('announcement').textContent = `API sélectionnée : ${b.api.name}`;
+  $('state').textContent = `${b.city.name} › ${b.pole.name} › ${b.api.name}`;
   if (navigate) approachApi(b);
+  writeLocation();
+  if (openRelations) fitRelations();
 }
 
 function showTab(tab) {
+  if (!selected) return;
+  clearTimeout(simulation);
+  activeTab = tab;
   const { api } = selected;
   for (const button of $('tabs').children) button.setAttribute('aria-pressed', String(button.dataset.tab === tab));
   const e = escape;
-  if (tab === 'overview') $('content').innerHTML = `<h3>Présentation de l’API</h3><p>${e(api.description || api.name)}</p><p>Service proposé par ${e(selected.city.name)}, au sein du pôle ${e(selected.pole.name)}.</p><h3>Usage et disponibilité</h3><p>${number(api.metrics.callsPerDay)} appels / jour<br>Disponibilité : ${e(api.metrics.availabilityPct ?? '—')} %<br>Latence p95 : ${e(api.metrics.latencyP95Ms ?? '—')} ms</p><p>Catalogue de démonstration : les informations commerciales détaillées restent à enrichir, sans inventer de données métier.</p>`;
-  if (tab === 'functional') $('content').innerHTML = `<h3>Capacités fonctionnelles</h3><ul>${api.endpoints.map(ep => `<li>${e(ep.summary)}</li>`).join('')}</ul><p>Tags : ${(api.tags ?? []).map(e).join(', ')}</p>`;
-  if (tab === 'technical') $('content').innerHTML = `<p><code>${e(api.basePath)}</code></p>${api.endpoints.map(ep => `<div class="endpoint"><strong>${e(ep.method)}</strong> <code>${e(ep.path)}</code><p>${e(ep.summary)}</p></div>`).join('')}`;
+  if (tab === 'overview') $('content').innerHTML = `<h3>Une capacité à intégrer</h3><p>${e(api.description || api.name)}</p><p>Service proposé par <b>${e(selected.city.name)}</b>, au sein du pôle ${e(selected.pole.name)}.</p>
+    ${api.status === 'DEPRECATED' ? '<div class="callout warning">API dépréciée. Vérifiez la stratégie de remplacement avec le responsable avant toute nouvelle intégration. Date de retrait non renseignée.</div>' : ''}
+    <div class="fact-grid"><div><b>${api.endpoints.length}</b><small>opérations déclarées</small></div><div><b>${complianceLabel(api.compliance?.score)}</b><small>conformité · pas un état de santé</small></div></div>
+    <p>Version ${e(api.version)} · ${e(statusName[api.status])} · Catalogue fictif.</p>`;
+  if (tab === 'functional') $('content').innerHTML = `<h3>Capacités fonctionnelles</h3><p>${e(api.description)}</p><ul>${api.endpoints.map(ep => `<li>${e(ep.summary)}</li>`).join('')}</ul><p>Tags : ${(api.tags ?? []).map(e).join(', ')}</p><div class="callout">Les règles métier détaillées, schémas de données et limites fonctionnelles ne sont pas fournis dans le jeu de démonstration.</div>`;
+  if (tab === 'technical') {
+    $('content').innerHTML = `<h3>Endpoints & atelier d’essais</h3><div class="callout">Simulation locale uniquement. Pas de requête envoyée, pas de schémas contractuels ni de réponse métier réelle.</div><p>Chemin de base : <code>${e(api.basePath)}</code></p>
+      ${api.endpoints.map((ep, i) => `<div class="endpoint"><strong>${e(ep.method)}</strong> <code>${e(ep.path)}</code><p>${e(ep.summary)}</p><button data-simulate="${i}">Préparer cet appel →</button></div>`).join('')}<div id="simulator"></div>`;
+    $('content').querySelectorAll('[data-simulate]').forEach(button => {
+      button.onclick = () => renderSimulator(api, Number(button.dataset.simulate));
+    });
+  }
   if (tab === 'contact') $('content').innerHTML = `<h3>Équipe responsable</h3><p>${e(api.contact.team)}</p><p>Responsable : ${e(api.contact.owner.name)}<br>${e(api.contact.owner.email)}</p><p>Référent : ${e(api.contact.lead.name)}<br>${e(api.contact.lead.email)}</p><p>${e(api.contact.phone)}<br>${e(api.contact.channel)}</p>`;
-  if (tab === 'governance') $('content').innerHTML = `<h3>Conformité : ${api.compliance.score} %</h3><p>${api.compliance.score >= 100 ? 'Hôtel de luxe : toutes les règles sont respectées.' : 'Règles non respectées :'}</p><ul>${api.compliance.failedRules.map(r => `<li>${e(r)}</li>`).join('')}</ul>`;
+  if (tab === 'governance') {
+    const kind = buildingKind(api.compliance?.score);
+    $('content').innerHTML = `<h3>Conformité : ${complianceLabel(api.compliance?.score)}</h3><p>${kind === 'unknown' ?
+      'Gris : score absent ou invalide. La conformité ne peut pas être déduite.' : kind === 'green' ?
+      'Vert : toutes les règles évaluées sont respectées (100 %).' :
+      `${kind === 'orange' ? 'Orange : conformité partielle (60–99 %).' : 'Rouge : conformité inférieure à 60 %.'} Règles non respectées :`}</p>
+      <ul>${(api.compliance?.failedRules ?? []).map(r => `<li>${e(r)}</li>`).join('')}</ul>`;
+  }
   if (tab === 'consumers') {
-    $('content').innerHTML = `<h3>Consommateurs internes (${world.consumers.get(api.id).length})</h3><div id="consumer-list"></div><h3>Partenaires externes</h3><ul>${api.externalConsumers.map(c => `<li>${e(c.name)} · ${number(c.callsPerDay)} appels/j</li>`).join('')}</ul>`;
+    $('content').innerHTML = `<h3>Consommateurs internes (${world.consumers.get(api.id).length})</h3><button id="open-api-relations">Qui appelle qui ?</button><div id="consumer-list"></div><h3>Partenaires externes</h3><ul>${api.externalConsumers.map(c => `<li>${e(c.name)} · ${number(c.callsPerDay)} appels/j</li>`).join('')}</ul>`;
+    $('open-api-relations').onclick = fitRelations;
     for (const b of world.consumers.get(api.id)) {
       const button = document.createElement('button');
       button.textContent = `${b.city.shortName ?? b.city.name} · ${b.api.name}`;
@@ -391,30 +676,70 @@ function showTab(tab) {
       $('consumer-list').append(button);
     }
   }
+  writeLocation();
+}
+
+function renderSimulator(api, index, host = $('simulator')) {
+  const ep = api.endpoints[index];
+  host.innerHTML = `<h3>Atelier · ${escape(ep.summary)}</h3><label>Endpoint<select id="simulation-endpoint">${api.endpoints.map((item, i) => `<option value="${i}" ${i === index ? 'selected' : ''}>${escape(item.method)} ${escape(item.summary)}</option>`).join('')}</select></label>
+    <p><code>${escape(ep.method)} ${escape(ep.path)}</code></p>
+    ${ep.path.includes('{id}') ? '<label>Identifiant de démonstration<input id="simulation-id" value="DEMO-042" maxlength="120"></label>' : ''}
+    ${['POST', 'PUT', 'PATCH'].includes(ep.method) ? '<label>Corps JSON de démonstration<textarea id="simulation-body">{\n  "reference": "DEMO-042"\n}</textarea></label>' : ''}
+    <label>Scénario de réponse<select id="simulation-scenario"><option value="success">Succès simulé</option><option value="401">401 · Accès refusé simulé</option><option value="429">429 · Quota dépassé simulé</option><option value="500">500 · Erreur fournisseur simulée</option></select></label>
+    <button id="simulation-send">Exécuter la simulation locale</button><pre id="simulation-output" class="simulation-output" role="status">Prêt · aucun appel réseau ne sera envoyé.</pre>`;
+  $('simulation-endpoint').onchange = () => {
+    clearTimeout(simulation);
+    const next = Number($('simulation-endpoint').value);
+    if (host.id === 'endpoint-simulator' && endpointFocus) inspectEndpoint(endpointFocus.building, next);
+    renderSimulator(api, next, host);
+  };
+  $('simulation-send').onclick = () => {
+    const output = $('simulation-output');
+    const id = $('simulation-id')?.value ?? '';
+    const body = $('simulation-body')?.value;
+    if (ep.path.includes('{id}') && !id.trim()) { output.textContent = 'Erreur : saisissez un identifiant.'; return; }
+    if (body) {
+      try { JSON.parse(body); } catch (error) { output.textContent = `JSON invalide : ${error.message}`; return; }
+    }
+    const scenario = $('simulation-scenario').value;
+    $('simulation-send').disabled = true;
+    output.textContent = 'Simulation locale en cours…';
+    simulation = setTimeout(() => {
+      const code = scenario === 'success' ? ep.method === 'POST' ? 201 : ep.method === 'DELETE' ? 204 : 200 : Number(scenario);
+      output.textContent = JSON.stringify({ simulation: true, networkRequestSent: false, status: code,
+        method: ep.method, path: ep.path.replaceAll('{id}', encodeURIComponent(id)),
+        message: code < 300 ? 'Exemple de succès, sans valeur contractuelle.' : 'Exemple d’erreur simulée, sans appel fournisseur.' }, null, 2);
+      $('simulation-send').disabled = false;
+    }, reducedMotion ? 0 : 350);
+  };
+  host.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth', block: 'start' });
 }
 
 function drawRelations() {
-  while (relations.children.length) {
-    const child = relations.children[0];
-    child.geometry.dispose();
-    child.material.dispose();
-    relations.remove(child);
+  related = new Map();
+  $('relation-count').textContent = '';
+  if (!selected || !relationsOn) {
+    $('relation-title').textContent = 'Sélectionnez une API pour révéler le graphe';
+    updateSignals();
+    return;
   }
-  if (!selected || !relationsOn) return;
+  $('relation-title').textContent = selected.api.name;
+  const impact = impactOf(world, selected.api.id);
   const targets = [
-    ...selected.api.dependencies.map(d => ({ b: world.byId.get(d.apiId), color: '#67bafa' })),
-    ...world.consumers.get(selected.api.id).map(b => ({ b, color: '#f2af6c' })),
-  ];
-  for (const { b, color } of targets) {
-    if (!b) continue;
-    const start = new THREE.Vector3(selected.x, selected.height + 1, selected.z);
-    const end = new THREE.Vector3(b.x, b.height + 1, b.z);
-    const mid = start.clone().add(end).multiplyScalar(0.5);
-    mid.y += Math.min(160, start.distanceTo(end) * 0.22) + 12;
-    const points = new THREE.QuadraticBezierCurve3(start, mid, end).getPoints(32);
-    relations.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
-      new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 })));
+    ...selected.api.dependencies.map(d => ({ from: selected, to: world.byId.get(d.apiId), color: '#62caff' })),
+    ...impact.map(item => ({ from: item.building, to: world.byId.get(item.via), color: item.depth > 1 ? '#ff70b6' : '#f2af6c' })),
+  ].filter(item => item.from && item.to);
+  for (const item of targets) {
+    if (item.from !== selected) related.set(item.from.api.id, item.color);
+    if (item.to !== selected) related.set(item.to.api.id, item.color);
   }
+  $('relation-count').textContent = `${selected.api.dependencies.length} fournisseurs déclarés · ${impact.length} API potentiellement impactées`;
+  updateSignals();
+}
+
+function fitRelations() {
+  if (!selected) { $('announcement').textContent = 'Sélectionnez d’abord une API.'; return; }
+  relationsView.open(selected);
 }
 
 function setTheme() {
@@ -425,13 +750,22 @@ function setTheme() {
   hemi.intensity = dark ? 1.3 : 2.5;
   sun.intensity = dark ? 1.5 : 3;
   streets?.setNight(dark);
-  for (const m of facadeMaterials) m.emissiveIntensity = dark ? 0.25 : 0.02;
+  signals?.setNight(dark);
+  for (const m of facadeMaterials) m.emissiveIntensity = dark ? 0.12 : 0.02;
   $('theme').textContent = dark ? '☀ Jour' : '☾ Nuit';
   $('theme').setAttribute('aria-label', dark ? 'Passer en mode jour' : 'Passer en mode nuit');
 }
 
 function updateLabels() {
+  if (architecture.activeBuilding) {
+    for (const item of labels) item.element.hidden = true;
+    return;
+  }
   const visible = [];
+  const obstacles = [document.querySelector('header'),
+    $('navigation'), $('panel'), $('relation-tools'), $('compliance-key')]
+    .filter(element => element.getClientRects().length && getComputedStyle(element).display !== 'none')
+    .map(element => element.getBoundingClientRect());
   for (const item of labels) {
     const distance = camera.position.distanceTo(item.position);
     const allowed = !fly.isLocked && (item.type === 'city' ||
@@ -442,8 +776,8 @@ function updateLabels() {
     if (projected.z < -1 || projected.z > 1) { item.element.hidden = true; continue; }
     const x = (projected.x + 1) * innerWidth / 2;
     const y = (1 - projected.y) * innerHeight / 2;
-    if (x < 0 || x > innerWidth || y < 85 || y > innerHeight - 50 ||
-        x < 315 && y < innerHeight - 80 || !$('panel').hidden && x > innerWidth - 420) {
+    if (x < 0 || x > innerWidth || y < 105 || y > innerHeight - 50 ||
+        obstacles.some(rect => x > rect.left - 25 && x < rect.right + 25 && y > rect.top && y < rect.bottom + 20)) {
       item.element.hidden = true;
       continue;
     }
@@ -472,17 +806,102 @@ function updateLabels() {
 }
 
 function bindEvents() {
+  for (const [id, name] of Object.entries(DOMAINS)) $('domain-filter').append(new Option(name, id));
+  for (const city of world.cities) $('city-filter').append(new Option(city.name, city.id));
+  for (const [id, key] of [['domain-filter', 'domain'], ['status-filter', 'status'], ['city-filter', 'city']]) {
+    $(id).onchange = () => { filters[key] = $(id).value; refreshMatches(true); };
+  }
+  $('browse').onclick = () => { refreshMatches(true); $('search').focus(); };
+  $('reset-filters').onclick = () => {
+    filters = { query: '', domain: '', status: '', city: '' };
+    for (const id of ['search', 'domain-filter', 'status-filter', 'city-filter']) $(id).value = '';
+    refreshMatches(true);
+  };
+  document.querySelectorAll('[data-query]').forEach(button => {
+    button.onclick = () => { $('search').value = button.dataset.query; filters.query = button.dataset.query; refreshMatches(true); $('search').focus(); };
+  });
+  $('nav-toggle').onclick = () => {
+    const collapsed = document.body.classList.toggle('nav-collapsed');
+    $('nav-toggle').setAttribute('aria-expanded', String(!collapsed));
+  };
+  if (innerWidth <= 760) {
+    document.body.classList.add('nav-collapsed');
+    $('nav-toggle').setAttribute('aria-expanded', 'false');
+  }
+  $('panel-full').onclick = () => {
+    const full = document.body.classList.toggle('panel-full');
+    $('panel-full').setAttribute('aria-pressed', String(full));
+    $('panel-full').setAttribute('aria-label', full ? 'Réduire la fiche' : 'Agrandir la fiche');
+  };
+  $('focus-frame').onclick = () => { if (architecture.activeBuilding) inspectBuilding(architecture.activeBuilding); };
+  $('focus-details').onclick = () => { if (architecture.activeBuilding) selectApi(architecture.activeBuilding); };
+  $('focus-contact').onclick = () => showContact(architecture.activeBuilding);
+  $('focus-relations').onclick = () => {
+    const b = architecture.activeBuilding;
+    if (!b) return;
+    if (selected !== b) inspectBuilding(b);
+    setMode('dependencies');
+    fitRelations();
+  };
+  $('focus-endpoint').onchange = () => {
+    const value = $('focus-endpoint').value;
+    if (value !== '' && architecture.activeBuilding) inspectEndpoint(architecture.activeBuilding, Number(value));
+  };
+  $('return-quarter').onclick = returnToQuarter;
+  $('path-pole').onclick = returnToQuarter;
+  $('path-world').onclick = () => overview();
+  $('path-city').onclick = () => { if (architecture.activeBuilding) focusCity(architecture.activeBuilding.city); };
+  $('building-previous').onclick = () => adjacentBuilding(-1);
+  $('building-next').onclick = () => adjacentBuilding(1);
+  $('reopen-results').onclick = () => { renderResults(); $('search').focus(); };
+  const wholeBuilding = () => {
+    const b = endpointFocus?.building;
+    if (b) inspectBuilding(b);
+  };
+  $('endpoint-close').onclick = wholeBuilding;
+  $('endpoint-building').onclick = wholeBuilding;
+  $('endpoint-copy').onclick = async () => {
+    if (!endpointFocus) return;
+    const ep = endpointFocus.building.api.endpoints[endpointFocus.index];
+    try {
+      if (!navigator.clipboard) throw new Error('Presse-papiers indisponible.');
+      await navigator.clipboard.writeText(ep.path);
+      $('endpoint-feedback').textContent = 'Chemin copié.';
+    } catch (error) {
+      console.warn('Copie du chemin impossible', error);
+      $('endpoint-feedback').textContent = `Copie impossible : ${error.message} Le chemin reste sélectionnable.`;
+    }
+  };
+  $('endpoint-simulate').onclick = () => {
+    if (endpointFocus) renderSimulator(endpointFocus.building.api, endpointFocus.index, $('endpoint-simulator'));
+  };
+  $('close-contact').onclick = () => { closeContact(true); renderer.domElement.focus(); };
+  $('copy-contact').onclick = async () => {
+    if (!contactBuilding) return;
+    try {
+      if (!navigator.clipboard) throw new Error('Presse-papiers indisponible.');
+      await navigator.clipboard.writeText(contactEntries(contactBuilding.api).map(([label, value]) => `${label} : ${value}`).join('\n'));
+      $('contact-feedback').textContent = 'Coordonnées copiées · catalogue fictif.';
+    } catch (error) {
+      console.warn('Copie du contact impossible', error);
+      $('contact-feedback').textContent = `Copie impossible : ${error.message} Les coordonnées restent sélectionnables ci-dessus.`;
+    }
+  };
+  $('fit-relations').onclick = fitRelations;
+  window.addEventListener('hashchange', restoreLocation);
   $('theme').onclick = () => { dark = !dark; setTheme(); };
   $('overview').onclick = () => overview();
   $('back').onclick = () => {
     const previous = history.pop();
     if (!previous) return;
+    clearBuildingFocus();
     currentCity = previous.city;
     $('entity').value = currentCity?.id ?? '';
     updatePoleOptions(currentCity);
     animateCamera(previous.position, previous.target);
     $('back').disabled = !history.length;
     $('state').textContent = currentCity?.name ?? 'Vue précédente';
+    writeLocation();
   };
   $('entity').onchange = () => {
     const city = world.cities.find(c => c.id === $('entity').value);
@@ -491,51 +910,74 @@ function bindEvents() {
   $('pole').onchange = () => {
     const pole = currentCity?.poles.get($('pole').value);
     if (!pole) return;
+    clearBuildingFocus();
     travelTo(new THREE.Vector3(pole.x + pole.width / 2 - 3, 2, pole.z + pole.depth / 2 - 2),
       Math.max(pole.width, pole.depth) * 1.05);
+    writeLocation();
   };
   $('people').onclick = () => {
     animatePeople = !animatePeople;
     $('people').setAttribute('aria-pressed', String(animatePeople));
-    $('people').textContent = animatePeople ? 'Mettre les promenades en pause' : 'Reprendre les promenades';
+    $('people').textContent = animatePeople ? 'Mettre les animations en pause' : 'Reprendre les animations';
   };
-  $('close').onclick = () => { $('panel').hidden = true; selected = null; selection.visible = false; drawRelations(); };
+  $('close').onclick = () => {
+    clearTimeout(simulation);
+    $('panel').hidden = true;
+    document.body.classList.remove('panel-open', 'panel-full');
+    $('panel-full').setAttribute('aria-pressed', 'false');
+    $('panel-full').setAttribute('aria-label', 'Agrandir la fiche');
+    selected = null; selection.visible = false; drawRelations(); writeLocation();
+  };
   $('approach').onclick = () => {
-    if (selected) approachApi(selected);
+    if (selected) inspectBuilding(selected);
   };
   $('relations').onclick = () => {
-    relationsOn = !relationsOn;
-    $('relations').setAttribute('aria-pressed', String(relationsOn));
-    drawRelations();
+    setMode(mode === 'dependencies' ? 'discovery' : 'dependencies');
+    if (mode === 'dependencies' && selected) fitRelations();
   };
   $('search').oninput = () => {
-    const query = $('search').value.trim().toLocaleLowerCase('fr');
-    $('results').replaceChildren();
-    $('results').hidden = !query;
-    if (!query) return;
-    const matches = world.buildings.filter(b =>
-      `${b.api.name} ${b.api.id} ${b.city.name} ${b.pole.name}`.toLocaleLowerCase('fr').includes(query)).slice(0, 15);
-    if (!matches.length) $('results').textContent = 'Aucune API trouvée.';
-    for (const b of matches) {
-      const button = document.createElement('button');
-      button.innerHTML = `${escape(b.api.name)}<small>${escape(b.city.name)} / ${escape(b.pole.name)}</small>`;
-      button.onclick = () => {
-        selectApi(b, 'overview', true);
-        $('results').hidden = true;
-        $('search').value = '';
-      };
-      $('results').append(button);
-    }
+    filters.query = $('search').value;
+    refreshMatches(Boolean(filters.query.trim()));
+    if (!filters.query.trim()) hideResults();
   };
   $('search').onkeydown = event => {
-    if (event.key === 'ArrowDown') { event.preventDefault(); $('results').querySelector('button')?.focus(); }
-    if (event.key === 'Escape') $('results').hidden = true;
+    if (event.key === 'ArrowDown') { event.preventDefault(); $('results').querySelector('button:not(#dismiss-results)')?.focus(); }
+    if (event.key === 'Escape') hideResults();
   };
+  $('results').onkeydown = event => {
+    const buttons = [...$('results').querySelectorAll('button')];
+    const index = buttons.indexOf(document.activeElement);
+    if (event.key === 'Escape') { hideResults(); $('search').focus(); }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      buttons[(index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
+    }
+  };
+  document.addEventListener('pointerdown', event => {
+    if (!event.target.closest('.search')) hideResults();
+  });
+  document.addEventListener('keydown', event => {
+    if ($('relations-view').open) return;
+    if (endpointFocus && event.key === 'Escape' && !fly.isLocked) {
+      event.preventDefault(); wholeBuilding(); return;
+    }
+    if (contactBuilding && event.key === 'Escape') {
+      event.preventDefault(); closeContact(true); renderer.domElement.focus();
+      return;
+    }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); $('search').focus(); }
+    if (event.key === 'Escape' && !fly.isLocked) { hideResults(); if (!$('panel').hidden) $('close').click(); }
+  });
   $('hover').onpointerenter = () => clearTimeout(hoverTimer);
   $('hover').onpointerleave = () => { hoverTimer = setTimeout(clearHover, 500); };
   $('hover').onclick = event => {
     const button = event.target.closest('button');
-    if (button && hovered) selectApi(hovered, button.dataset.action);
+    if (button && hovered) {
+      if (button.dataset.action === 'relationships') {
+        inspectBuilding(hovered);
+        fitRelations();
+      } else selectApi(hovered, button.dataset.action);
+    }
   };
   renderer.domElement.addEventListener('pointerdown', e => {
     transition = null;
@@ -549,14 +991,32 @@ function bindEvents() {
     if (pointerDown) return;
     const b = pick(e);
     renderer.domElement.style.cursor = b ? 'pointer' : 'grab';
-    if (b) showHover(b, e);
+    const hit = b ? pickHit(e) : null;
+    if (hit?.object.userData.action === 'endpoint') {
+      clearHover();
+      const index = hit.object.userData.endpointIndex;
+      architecture.highlightEndpoint(b, endpointFocus?.index ?? index);
+      $('state').textContent = `${b.api.endpoints[index].method} · ${b.api.endpoints[index].summary} · Cliquer pour explorer cet étage`;
+    } else if (b) {
+      architecture.highlightEndpoint(endpointFocus?.building, endpointFocus?.index);
+      showHover(b, e);
+    }
     else if (hovered) { clearTimeout(hoverTimer); hoverTimer = setTimeout(clearHover, 500); }
+    if (!b) architecture.highlightEndpoint(endpointFocus?.building, endpointFocus?.index);
   });
-  renderer.domElement.addEventListener('pointerleave', () => { hoverTimer = setTimeout(clearHover, 500); });
+  renderer.domElement.addEventListener('pointerleave', () => {
+    architecture.highlightEndpoint(endpointFocus?.building, endpointFocus?.index);
+    hoverTimer = setTimeout(clearHover, 500);
+  });
   renderer.domElement.addEventListener('click', e => {
     if (!moved && pointerDown?.button === 0 && !fly.isLocked) {
-      const b = pick(e);
-      if (b) selectApi(b);
+      const hit = pickHit(e);
+      if (hit) {
+        const b = hit.object.userData.building ?? hit.object.userData.buildings[hit.instanceId];
+        if (hit.object.userData.action === 'contact') showContact(b);
+        else if (hit.object.userData.action === 'endpoint') inspectEndpoint(b, hit.object.userData.endpointIndex);
+        else inspectBuilding(b);
+      }
     }
     pointerDown = null;
   });
@@ -564,8 +1024,10 @@ function bindEvents() {
   renderer.domElement.addEventListener('wheel', () => { transition = null; clearHover(); }, { passive: true });
   renderer.domElement.addEventListener('dblclick', e => {
     if (fly.isLocked) return;
+    if (pickHit(e)?.object.userData.action === 'endpoint') return;
     const b = pick(e);
     if (b) { selectApi(b, 'overview', true); return; }
+    pointer.set(e.clientX / innerWidth * 2 - 1, 1 - e.clientY / innerHeight * 2);
     raycaster.setFromCamera(pointer, camera);
     const hit = raycaster.intersectObject(ground)[0];
     if (hit) travelTo(hit.point, 80);
@@ -660,8 +1122,10 @@ function animate(now) {
     camera.position.y = Math.max(2, Math.min(6000, camera.position.y));
   } else orbit.update();
   if (now - lastLabels > 180) {
-    updateLabels();
     const signs = apiSigns.update(camera, selected?.api.id);
+    architecture.updateView(camera, hovered);
+    updateLabels();
+    focusControls();
     $('stats').dataset.projection = JSON.stringify({ position: camera.position.toArray(), target: orbit.target.toArray() });
     $('stats').dataset.signs = String(signs);
     lastLabels = now;
@@ -673,12 +1137,18 @@ function animate(now) {
     $('stats').dataset.peopleVisible = String(people.visible);
     lastLife = now;
   }
+  signals?.animate(now, reducedMotion || !animatePeople);
   renderer.render(scene, camera);
   if (now - lastStats > 750) {
     $('stats').textContent = `1 500 API · ${developers.count} développeurs · ${renderer.info.render.calls} appels GPU · Alt. ${Math.round(camera.position.y)} m`;
     $('stats').dataset.buildings = String(world.buildings.length);
     $('stats').dataset.camera = camera.position.toArray().map(v => v.toFixed(1)).join(',');
     $('stats').dataset.developers = String(developers.count);
+    $('stats').dataset.mode = mode;
+    $('stats').dataset.matches = String(matches.size);
+    $('stats').dataset.relations = '0';
+    $('stats').dataset.ports = String(architecture.portCount);
+    $('stats').dataset.endpointBuildings = architecture.visibleIds.join(',');
     lastStats = now;
   }
 }
@@ -700,14 +1170,43 @@ async function start() {
     pickMeshes.push(...streets.pickMeshes);
     developers = createDevelopers(scene, world, reducedMotion);
     apiSigns = createApiSigns(scene, world);
+    signals = createCitySignals(scene, world);
+    architecture = createCityArchitecture(scene, world);
+    relationsView = createRelationsView($('relations-view'), world, {
+      explore: b => {
+        const outsideFilters = !matches.has(b.api.id);
+        if (outsideFilters) {
+          filters = { query: '', domain: '', status: '', city: '' };
+          for (const id of ['search', 'domain-filter', 'status-filter', 'city-filter']) $(id).value = '';
+          refreshMatches();
+          hideResults();
+        }
+        inspectBuilding(b);
+        if (outsideFilters) $('announcement').textContent = `${b.api.name} affichée dans la cité. Les filtres incompatibles ont été réinitialisés.`;
+      },
+      center: b => selectApi(b, 'consumers'),
+    });
     setTheme();
     camera.position.set(world.extent * 0.54, world.extent * 0.8, world.extent * 0.76);
     orbit.target.set(0, 0, 0);
     orbit.update();
     bindEvents();
+    refreshMatches();
+    if (!location.hash) {
+      const city = world.cities[0];
+      currentCity = city;
+      $('entity').value = city.id;
+      updatePoleOptions(city);
+      const pole = city.poles.values().next().value;
+      const target = new THREE.Vector3(pole.x + pole.width / 2 - 3, 3, pole.z + pole.depth / 2 - 2);
+      orbit.target.copy(target);
+      camera.position.copy(target).add(new THREE.Vector3(85, 85, 100));
+      orbit.update();
+    }
+    restoreLocation();
     ready = true;
     $('loading').hidden = true;
-    $('state').textContent = 'Vue du monde · Choisis une ville pour commencer';
+    if (!selected) $('state').textContent = currentCity ? `${currentCity.name} · Cherchez une capacité ou explorez le quartier` : 'Vue du monde · Choisissez une ville pour commencer';
     frame = requestAnimationFrame(animate);
   } catch (error) {
     console.error('Construction du monde impossible', error);
@@ -719,10 +1218,13 @@ async function start() {
 window.addEventListener('pagehide', (event) => {
   if (event.persisted) return;
   disposed = true;
+  clearTimeout(simulation);
   cancelAnimationFrame(frame);
   orbit.dispose();
   fly.dispose();
   apiSigns?.dispose();
+  architecture?.dispose();
+  relationsView?.dispose();
   const geometries = new Set();
   const materials = new Set();
   scene.traverse(object => {

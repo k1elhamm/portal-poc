@@ -90,6 +90,25 @@
     .tile-name { overflow-wrap: anywhere; font-size: 17px; font-weight: 800; letter-spacing: -.01em; line-height: 1.2; color: color-mix(in srgb, var(--c) 45%, #15212c); }
     .tile-meta { margin-top: 2px; color: var(--muted); font-size: 11.5px; line-height: 1.35; }
     .tile.pole .tile-meta { color: color-mix(in srgb, var(--c) 55%, #333); }
+    .tile.pole { padding: 18px; border: 1px solid color-mix(in srgb, var(--c) 24%, #fff); border-top: 4px solid var(--c); border-radius: 16px; background: linear-gradient(145deg, #fff, color-mix(in srgb, var(--c) 7%, #fff)); cursor: pointer; }
+    .tile.pole .tile-head { padding: 0; flex: 1; flex-direction: column; align-items: stretch; gap: 12px; cursor: pointer; color: var(--ink); font: inherit; }
+    .pole-domain { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .tile.pole .tile-name { font-size: 21px; line-height: 1.2; letter-spacing: -.025em; color: var(--ink); }
+    .pole-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+    .pole-facts b, .pole-facts small { display: block; }
+    .pole-facts b { font-size: 21px; font-weight: 800; letter-spacing: -.03em; }
+    .pole-facts small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+    .pole-preview { display: flex; flex-wrap: wrap; gap: 5px; max-height: 48px; overflow: hidden; }
+    .pole-preview span { max-width: 100%; overflow: hidden; padding: 4px 7px; border-radius: 5px; background: color-mix(in srgb, var(--c) 9%, #fff); color: var(--ink-2); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .pole-open { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 8px; font-size: 12px; font-weight: 750; color: color-mix(in srgb, var(--c) 55%, #17212b); }
+    .pole-open span:last-child { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid var(--rule); border-radius: 50%; background: #fff; font-size: 17px; }
+    .tile.pole:hover .pole-open span:last-child { background: var(--ink); color: #fff; }
+    .pole-owner { color: var(--muted); font-size: 10px; }
+    .tile.pole.tight { padding: 12px; }
+    .tile.pole.tight .tile-head { gap: 8px; }
+    .tile.pole.tight .tile-name { font-size: 18px; }
+    .tile.pole.tight .pole-facts { padding: 8px 0; }
+    .tile.pole.tight .pole-preview, .tile.pole.tight .pole-owner { display: none; }
     .tile.compact .tile-head { padding: 6px 8px 3px; }
     .tile.compact .tile-name { overflow: hidden; font-size: 12.5px; text-overflow: ellipsis; white-space: nowrap; }
     .tile.compact .tile-meta { overflow: hidden; margin-top: 0; font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
@@ -148,7 +167,6 @@
     .shelf-legend i { display: inline-block; width: 10px; height: 4px; margin: 0 3px 1px 6px; border-radius: 2px; vertical-align: middle; }
     .shelf-body { flex: 1; overflow: auto; padding: 4px 20px 30px; }
     .plank-row { position: relative; display: flex; align-items: flex-end; gap: 3px; margin-top: 22px; padding: 0 12px; }
-    .plank-row::after { content: ""; position: absolute; right: 0; bottom: -13px; left: 0; height: 13px; border-radius: 3px; background: linear-gradient(#dccdb2, #b99f7c); box-shadow: 0 10px 16px rgb(80 60 30 / 16%); }
     .book { position: relative; flex: none; width: var(--w); height: var(--hh); padding: 0; border: 0; border-radius: 3px 3px 2px 2px; cursor: pointer; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 72%, #000) 0, var(--c) 16%, color-mix(in srgb, var(--c) 78%, #fff) 44%, var(--c) 72%, color-mix(in srgb, var(--c) 70%, #000) 100%); box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%); transform: rotate(var(--tilt, 0deg)); transform-origin: bottom left; transition: transform .22s var(--ease), box-shadow .22s, opacity .3s, filter .3s; }
     .book:hover, .book:focus-visible { z-index: 3; outline: none; box-shadow: 0 16px 26px rgb(0 0 0 / 24%), inset 0 0 0 1px rgb(0 0 0 / 8%); transform: translateY(-14px) rotate(var(--tilt, 0deg)); }
     .book:focus-visible { box-shadow: 0 0 0 3px #1c7ed6, 0 16px 26px rgb(0 0 0 / 24%); }
@@ -177,9 +195,9 @@
     .rayon-head .dom-dot { align-self: center; }
     .rayon .plank-row:first-of-type { margin-top: 12px; }
     .shelf-empty { display: grid; height: 70%; place-items: center; color: var(--muted); text-align: center; }
-    .book-stacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); align-items: end; gap: 28px 22px; }
-    .plank-row { flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; margin-top: 18px; padding: 0 8px; }
-    .book { border-radius: 3px 6px 6px 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c) 18%, var(--c) 80%, color-mix(in srgb, var(--c) 65%, #000)); box-shadow: inset 0 -3px 0 rgb(0 0 0 / 16%), 1px 2px 3px rgb(0 0 0 / 12%); }
+    .book-stacks { display: grid; grid-template-columns: repeat(auto-fill, min(100%, 300px)); align-items: start; gap: 28px 22px; }
+    .plank-row { flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; margin-top: 18px; padding: 0; }
+    .book { width: 100%; height: 64px; border-radius: 3px 6px 6px 3px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 75%, #fff), var(--c) 18%, var(--c) 80%, color-mix(in srgb, var(--c) 65%, #000)); box-shadow: inset 0 -3px 0 rgb(0 0 0 / 16%), 1px 2px 3px rgb(0 0 0 / 12%); }
     .book:hover, .book:focus-visible { transform: translateX(6px); }
     .book .t { top: 8px; right: 48px; bottom: 8px; left: 20px; display: flex; align-items: center; color: #fff; font-size: 13px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; text-align: left; transform: none; writing-mode: horizontal-tb; text-shadow: 0 1px 3px #000; }
     .book .v { top: 50%; right: 8px; bottom: auto; left: auto; font-size: 10px; transform: translateY(-50%); }
@@ -1064,7 +1082,13 @@
       layer.replaceChildren();
       const kids = sortedKids(cur.k);
       if (!kids.length) layer.append(h(`<div class="shelf-empty"><div><b>Aucun ${typeWord(2)} ici pour l’instant.</b><br>Choisissez un autre type ou remontez d’un niveau.</div></div>`));
-      const rects = mosaicLayout(kids, mosaic.clientHeight);
+      const poles = kids.length && kids.every(item => nodeOf(item.node).kind === "a");
+      const rows = Math.max(1, Math.floor(mosaic.clientHeight / 330));
+      const poleWidth = Math.min(340, mosaic.clientWidth);
+      const poleHeight = Math.min(340, mosaic.clientHeight / rows);
+      const rects = poles ? kids.map((item, index) => ({ ...item,
+        x: Math.floor(index / rows) * poleWidth, y: (index % rows) * poleHeight,
+        w: poleWidth, h: poleHeight })) : mosaicLayout(kids, mosaic.clientHeight);
       layer.style.height = `${mosaic.clientHeight}px`;
       layer.style.width = `${Math.max(mosaic.clientWidth, ...rects.map(r => r.x + r.w))}px`;
       rects.forEach((r) => layer.append(tileEl(r)));
@@ -1076,11 +1100,29 @@
     function tileEl(r) {
       const n = nodeOf(r.node), el = document.createElement("div");
       const compact = false;
-      el.className = `tile${n.kind === "a" ? " pole" : ""}`;
+      el.className = `tile${n.kind === "a" ? ` pole${r.h < 285 ? " tight" : ""}` : ""}`;
       el.dataset.k = n.k;
       if (n.color) el.style.setProperty("--c", n.color);
       place(el, r);
       const cnt = nodeCount(n.k), kids = kidsOf(n.k);
+      if (n.kind === "a") {
+        const app = APPS[n.id], items = itemsOf(n.id);
+        const endpoints = items.reduce((sum, item) => sum + item.endpoints.length, 0);
+        const calls = items.reduce((sum, item) => sum + item.calls, 0);
+        const samples = [...items].sort((a, b) => b.calls - a.calls).slice(0, 3);
+        const button = h(`<button class="tile-head" type="button">
+          <span class="pole-domain">${esc(n.sub)}</span>
+          <span class="tile-name">${esc(n.name)} <span class="tile-badges"></span></span>
+          <span class="pole-facts"><span><b>${cnt}</b><small>${typeWord(cnt)}</small></span><span><b>${fmt(endpoints)}</b><small>endpoints</small></span><span><b>${fmt(calls)}</b><small>appels / jour</small></span></span>
+          <span class="pole-preview">${samples.map(item => `<span>${esc(item.name)}</span>`).join("")}</span>
+          <span class="pole-owner">Responsable · ${esc(app.owner.name)}</span>
+          <span class="pole-open"><span>Explorer les ${cnt} ${typeWord(cnt)}</span><span aria-hidden="true">→</span></span>
+        </button>`);
+        button.setAttribute("aria-label", `Ouvrir ${n.name}, ${cnt} ${typeWord(cnt)}, ${endpoints} endpoints`);
+        el.append(button);
+        el.addEventListener("click", () => zoomIn(pathOf(n.k), relRect(el)));
+        return el;
+      }
       const word = { e: "pôles", s: "pôles" }[n.kind];
       const meta = [`${cnt} ${typeWord(cnt)}`, usageMode() ? `${fmt(nodeValue(n.k))} appels/j` : "", kids.length ? `${kids.length} ${word}` : "", n.kind === "a" ? n.sub : ""].filter(Boolean).join(" · ");
       const head = h(`<button class="tile-head" type="button"><span style="min-width:0"><div class="tile-name">${esc(n.name)}</div><div class="tile-meta">${esc(meta)}</div>${n.kind !== "a" && !compact ? `<div class="tile-meta" style="opacity:.8">${esc(n.sub)}</div>` : ""}</span><span class="tile-badges"></span></button>`);
@@ -1226,7 +1268,7 @@
             <button class="pill" type="button" data-to-city>🏙 Voir dans la cité</button>
           </div>
         </div>
-        <div class="shelf-legend">Un livre couché = une API · Livres empilés verticalement, titres sur les tranches · Épaisseur = endpoints (avec un minimum lisible) · Longueur = usage · Bandes = méthodes <i style="background:#2f9e44"></i>GET<i style="background:#1c7ed6"></i>POST<i style="background:#f59f00"></i>PATCH<i style="background:#e03131"></i>DELETE · ★ = conformité 100 %</div>
+        <div class="shelf-legend">Un livre couché = une API · Livres de même taille, titres sur les tranches · Bandes = méthodes <i style="background:#2f9e44"></i>GET<i style="background:#1c7ed6"></i>POST<i style="background:#f59f00"></i>PATCH<i style="background:#e03131"></i>DELETE · ★ = conformité 100 %</div>
         <div class="shelf-body"></div></div>`;
       host.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => zoomOutTo(pathOf(b.dataset.go))));
       host.querySelectorAll("[data-sort]").forEach((b) => b.addEventListener("click", () => { state.shelfSort = b.dataset.sort; renderShelf(host, k); }));
@@ -1268,7 +1310,7 @@
       b.type = "button";
       b.className = `book ${it.type}${it.status === "deprecated" ? " deprecated" : ""}`;
       b.dataset.id = it.id;
-      b.style.cssText = `--c:color-mix(in srgb, ${c} ${82 + (i % 4) * 6}%, #000);--w:${Math.round(88 + usageRatio(it) * 12)}%;--hh:${44 + it.endpoints.length * 2}px`;
+      b.style.cssText = `--c:color-mix(in srgb, ${c} ${82 + (i % 4) * 6}%, #000)`;
       const ms = {};
       it.endpoints.forEach(([m]) => (ms[m] = (ms[m] || 0) + 1));
       const sc = { stable: "#2f9e44", beta: "#fab005", deprecated: "#868e96", preview: "#7048e8" }[it.status];

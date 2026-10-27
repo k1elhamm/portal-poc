@@ -24,13 +24,20 @@ du même catalogue :
   - Une teinte par entité, déclinée pour ses pôles et ses livres. Les couleurs
     de statut et de méthode HTTP gardent leur signification.
   - Pas de mini-livres dans la mosaïque d'ensemble.
+  - Dans une entité, les pôles ont des panneaux de dimensions identiques,
+    avec nom, domaine, nombre de ressources, endpoints, appels/jour,
+    responsable et exemples de ressources. Toute la surface permet d'ouvrir
+    les livres. Les panneaux se parcourent horizontalement, sans titre tronqué
+    ni répétition du domaine dans un corps vide.
   - Nombre / Usage pondère les dimensions et les surfaces des pôles. Les
     bornes des blocs empêchent une proportionnalité stricte entre entités :
     les chiffres affichés restent la référence pour comparer les volumes.
   - Les livres sont **couchés et empilés verticalement**, par piles de six
     au maximum. Leurs titres horizontaux sont sur les tranches, pas sur de
-    grandes couvertures. L'épaisseur varie selon les endpoints avec un minimum
-    lisible ; la longueur varie légèrement avec l'usage.
+    grandes couvertures, sans planche d'étagère marron. Tous les livres ont
+    la même taille : 300 × 64 px, avec une largeur réduite uniformément si
+    l'écran est plus étroit. L'usage et le nombre d'endpoints ne changent plus
+    leurs dimensions ; les tris correspondants restent disponibles.
 - **Cité** : chaque entité est une ville, chaque pôle un quartier, chaque API un immeuble.
   - Hauteur de l'immeuble = nombre d'endpoints.
   - État de l'immeuble = conformité à la gouvernance (hôtel de luxe à 100 %).

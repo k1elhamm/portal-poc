@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4333 --strictPort",
     "build": "vite build",
-    "test": "node --test layout.test.js",
-    "test:browser": "node browser.test.js"
+    "test": "node --test layout.test.js catalog.test.js city-architecture.test.js",
+    "test:browser": "node browser.test.js",
+    "test:journey": "node journey.test.js"
   },
   "dependencies": {
     "three": "0.186.1"
